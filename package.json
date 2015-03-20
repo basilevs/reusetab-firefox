@@ -5,5 +5,5 @@
   "description": "Reuses a pinned tab. If a new tab is created for a host that is already shown in pinned tabs, new tab is closed and the pinned one opens this URL instead.",
   "author": "Vasili Gulevich",
   "license": "MPL 2.0",
-  "version": "0.2"
+  "version": "0.3"
 }
