@@ -1,4 +1,8 @@
 "use strict";
+/*
+See index.js handleTabOpen() function to find out why location listener is required
+and why require("sdk/tabs").on('ready', ...) can't be used instead.
+*/
 const {Ci, Cu} = require("chrome");
 const {viewFor} = require('sdk/view/core');
 const {modelFor} = require('sdk/model/core');
