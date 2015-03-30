@@ -1,3 +1,4 @@
+"use strict";
 const {Ci, Cu} = require("chrome");
 const {viewFor} = require('sdk/view/core');
 const {modelFor} = require('sdk/model/core');

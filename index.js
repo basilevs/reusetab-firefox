@@ -1,3 +1,4 @@
+"use strict";
 const tabs = require("sdk/tabs");
 const {areUrlsEqualByHost, blockAfterSuccess, expireAfter, log} = require("./utils");
 const {addLocationListener, removeLocationListener} = require("./location");
@@ -77,7 +78,7 @@ tabs.on('open', handleTabOpen);
 require("sdk/system/unload").when(function() {
 	tabs.removeListener('open', handleTabOpen);
 	for (let tab of tabs) {
-		removeLocationListener(tab, handleTabReady);
+		removeLocationListener(tab, handleTabUrl);
 		delete tab.reuseMonitor;
 	}
 });

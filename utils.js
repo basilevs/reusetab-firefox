@@ -1,3 +1,4 @@
+"use strict";
 var urls = require("sdk/url");
 
 function log() {
