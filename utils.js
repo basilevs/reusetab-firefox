@@ -60,8 +60,8 @@ function getHost(url) {
 */
 function areUrlsEqualByHost(url1, url2) {
 	log("Matching urls " + url1 + " and " + url2);
-	host1 = getHost(url1);
-	host2 = getHost(url2);
+	const host1 = getHost(url1);
+	const host2 = getHost(url2);
 	// On statrtup all tabs have about:blank or about:home urls for a short while.
 	// These should not be considered equal and are not a subject for squash
 	if (!host1 || !host2) {

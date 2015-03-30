@@ -1,4 +1,4 @@
-var utils = require("./utils");
+var utils = require("../utils");
 var timers = require("sdk/timers");
 
 exports["test blockAfterSuccess"] = function(assert) {
