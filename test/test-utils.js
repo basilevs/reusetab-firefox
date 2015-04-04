@@ -1,7 +1,7 @@
 var utils = require("../utils");
 var timers = require("sdk/timers");
 
-exports["test blockAfterSuccess"] = function(assert) {
+exports.blockAfterSuccess = function(assert) {
 	var i = 0;
 	var delegate = function() {
 		i++;
@@ -25,7 +25,7 @@ exports["test blockAfterSuccess"] = function(assert) {
 	assert.throws(wrapped, "Exception propagates fine");
 };
 
-exports["test expireAfter"] = function(assert, done) {
+exports.expireAfter = function(assert, done) {
 	var i = 0;
 	function delegate() {
 		return i++;
@@ -47,7 +47,7 @@ exports["test expireAfter"] = function(assert, done) {
 	}, 120);
 };
 
-exports["test expireAfterInactivity"] = function(assert, done) {
+exports.expireAfterInactivity = function(assert, done) {
 	var i = 0;
 	function delegate() {
 		return i++;
@@ -74,7 +74,7 @@ exports["test expireAfterInactivity"] = function(assert, done) {
 
 };
 
-exports["test expireAfterInactivity2"] = function(assert, done) {
+exports.expireAfterInactivity2 = function(assert, done) {
 	var i = 0;
 	function delegate() {
 		return i++;
@@ -102,4 +102,3 @@ exports["test areUrlsEqualByHost"] = function(assert) {
 	assertNotEqual("about:blank", "about:home");
 };
 
-require("sdk/test").run(exports);
