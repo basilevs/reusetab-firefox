@@ -25,7 +25,9 @@ exports.blockAfterSuccess = function(assert) {
 	assert.assertRaises(wrapped, "Legitimate error", "Exception propagates fine");
 };
 
-exports.expireAfter = function(assert, done) {
+exports.expireAfter = function(assert) {
+	assert.waitUntilDone(200);
+	let done = assert.done.bind(assert);
 	var i = 0;
 	function delegate() {
 		return i++;
@@ -49,6 +51,8 @@ exports.expireAfter = function(assert, done) {
 
 exports.expireAfterInactivity = function(assert) {
 	let done = assert.done.bind(assert);
+	assert.waitUntilDone(300);
+
 	var i = 0;
 	function delegate() {
 		return i++;
@@ -76,6 +80,7 @@ exports.expireAfterInactivity = function(assert) {
 };
 
 exports.expireAfterInactivity2 = function(assert) {
+	assert.waitUntilDone(200);
 	let done = assert.done.bind(assert);
 	var i = 0;
 	function delegate() {
@@ -88,7 +93,6 @@ exports.expireAfterInactivity2 = function(assert) {
 		assert.assertEqual(1, i, "Delegate is called after creation + timeout");
 		done();
 	}, 120);
-	assert.waitUntilDone(200);
 };
 
 

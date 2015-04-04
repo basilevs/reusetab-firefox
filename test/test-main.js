@@ -12,7 +12,7 @@ function log() {
 function areAllTabsComplete() {
 	for (let tab of tabs) {
 		if (tab.readyState != "complete" && tab.readyState != "interactive") {
-			log("Tab ", tab.id, " is ", tab.readyState, ", url: ", tab.url);
+			log("Tab " + tab.id + " is " + tab.readyState + ", url: " + tab.url);
 			return false;
 		}
 		log("Tab ", tab.id, " is ", tab.readyState, ", url: ", tab.url);
@@ -22,7 +22,7 @@ function areAllTabsComplete() {
 
 function openNew(url, pinned) {
 	log("Opening ", url);
-	tabs.open({url: url, isPinned: pinned});
+	return new Promise(resolve => tabs.open({url: url, isPinned: pinned, onOpen:resolve}));
 }
 
 var originalTab = null;
@@ -38,79 +38,107 @@ function leaveASingleTab() {
 	}
 }
 
-function iterateSteps(steps, canProceed, done) {
-	var i = 0;
-	var timerHandle = -1;
-	function makeStep() {
-		try{
-			if (i >= steps.length)
-				return true;
-			log("Step: " + i + "/" + steps.length);
-			steps[i]();
-		} finally {
-			i++;
-			if (i >= steps.length) {
-				return false;
+/*
+Resolves to predicate result when it is truth
+Arguments:
+	install - installs change listener
+	uninstall - makes the opposite
+*/
+function waitUntil(install, uninstall, predicate) {
+	if (!install.apply || !uninstall.apply || !predicate.apply)
+		throw new Error("All arguments should be functions");
+	return new Promise(function(resolve, reject) {
+		function check() {
+			try {
+				let result = predicate();
+				log("waitUntil ", result, predicate); 
+				if (result) {
+					resolve(result);
+					uninstall(check);
+				}
+			} catch (e) {
+				reject(e);
+				uninstall(check);
 			}
 		}
-		return true;
-	}
-	
-	function tryStep() {
-		log("Trying step");
-		try {
-			while (true) {
-				if (!canProceed())
-					return;
-				if (!makeStep()) {
-					uninstall();
-					return;
-				}
-			} 
-		} catch (e) {
-			uninstall();
-			throw e;
-		}
-	}
-	function uninstall() {
-		log("Completed iteration");
-		tabs.removeListener('*', tryStep);
-		timers.clearTimeout(timerHandle);
-		done();
-	}
-	tabs.on('ready', tryStep);
-	tryStep();
+		install(check);
+		check();
+	});
 }
 
-function executeAll() {
-	var args = Array.prototype.slice.call(arguments);
-	return function() {
-		for (let f of args) {
-			f();
-		}
+/*
+Resolves to predicate value.
+Tries to resolve on every tab ready event.
+*/
+function waitOnTabsUntil(predicate) {
+	return waitUntil(
+		tabs.on.bind(tabs, 'ready'),
+		tabs.removeListener.bind(tabs, 'ready'),
+		predicate
+	);
+}
+
+
+// Resolves to truth when all tabs are complete or interactive
+function waitForTabs() {
+	return waitOnTabsUntil(areAllTabsComplete);
+}
+
+function composePromises(promiseFactories, input) {
+	let promise = Promise.resolve(promiseFactories[0](input));
+	for (let i = 1; i < promiseFactories.length; i++) {
+		let step = promiseFactories[i];
+		promise = promise.then(value => Promise.resolve(step(value)));
+	}
+	return promise;
+}
+
+
+function prependPromise(prefixPromiseFactory, actionPromiseFactory) {
+	if (!prefixPromiseFactory.apply || !actionPromiseFactory.apply)
+		throw new Error("Both arguments should be  set");
+	return function(value) {
+		log("prependPromise", value);
+		prefixPromiseFactory().then(_ => actionPromiseFactory(value));
 	};
 }
 
-exports1["test openNonDuplicate"] = function(assert, done) {
-	iterateSteps(
+function doTabManipulations(steps) {
+	var waiting = [];
+	for (let step of steps) {
+		waiting.push(prependPromise(waitForTabs, step));
+	}
+	return composePromises(waiting);
+}
+
+function assertPromise(runner, promise) {
+	runner.waitUntilDone(10000);
+	let done = runner.done.bind(runner);
+	promise.then(done, done);
+}
+
+exports["test openNonDuplicate"] = function(runner) {
+	let promise = doTabManipulations(
 		[
 			leaveASingleTab,
 			function() {
-				openNew("about:blank", true);
-				openNew("http://ya.ru/", false);
+				return Promise.all([
+					openNew("about:blank", true),
+					openNew("http://ya.ru/", false)
+				]);
 			},
-			function() {
-				assert.assertEqual(3, tabs.length, "Both new tabs should be opened");
-			},
-			leaveASingleTab
-		],
-		areAllTabsComplete,
-		done
+			function(openedTabs) {
+				runner.assert(areAllTabsComplete(), "All tabs should be ready");
+				runner.assertEqual(3, tabs.length, "Both new tabs should be opened");
+				leaveASingleTab();
+			}
+		]
 	);
+	assertPromise(runner, promise);
 };
 
-exports1["test openDuplicate"] = function(assert, done) {
-	iterateSteps(
+exports1["test openDuplicate"] = function(runner) {
+	let promise = doTabManipulations(
 		[
 			leaveASingleTab,
 			function() {
@@ -118,11 +146,12 @@ exports1["test openDuplicate"] = function(assert, done) {
 				openNew("http://ya.ru/", false);
 			},
 			function() {
-				assert.assertEqual(2, tabs.length, "Only one tab should left");
+				runner.assert(areAllTabsComplete(), "All tabs should be ready");
+				runner.assertEqual(2, tabs.length, "Only one tab should left");
 			},
 			leaveASingleTab
-		],
-		areAllTabsComplete,
-		done
+		]
 	);
+	
+	assertPromise(runner, promise);
 };
