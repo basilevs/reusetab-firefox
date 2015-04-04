@@ -100,7 +100,7 @@ exports1["test openNonDuplicate"] = function(assert, done) {
 				openNew("http://ya.ru/", false);
 			},
 			function() {
-				assert.equal(3, tabs.length, "Both new tabs should be opened");
+				assert.assertEqual(3, tabs.length, "Both new tabs should be opened");
 			},
 			leaveASingleTab
 		],
@@ -118,7 +118,7 @@ exports1["test openDuplicate"] = function(assert, done) {
 				openNew("http://ya.ru/", false);
 			},
 			function() {
-				assert.equal(2, tabs.length, "Only one tab should left");
+				assert.assertEqual(2, tabs.length, "Only one tab should left");
 			},
 			leaveASingleTab
 		],
