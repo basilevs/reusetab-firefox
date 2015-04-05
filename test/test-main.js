@@ -25,21 +25,14 @@ function openNew(url, pinned) {
 	return new Promise(resolve => tabs.open({url: url, isPinned: pinned, onOpen:resolve}));
 }
 
-var originalTab = null;
-function leaveASingleTab() {
-	if (!originalTab)
-		originalTab = tabs[0];
-	if (originalTab.url != "about:blank")
-		throw new Error("Invalid start url: " + originalTab.url);
-	for (let tab of tabs) {
-		if (originalTab === tab)
-			continue;
-		tab.close();
-	}
+function closeTab(tab) {
+	return new Promise(resolve => tab.close(resolve));
 }
 
+var originalTab = null;
+
 /*
-Resolves to predicate result when it is truth
+Resolves to predicate result when it becomes truth
 Arguments:
 	install - installs change listener
 	uninstall - makes the opposite
@@ -53,8 +46,8 @@ function waitUntil(install, uninstall, predicate) {
 				let result = predicate();
 				log("waitUntil ", result, predicate); 
 				if (result) {
-					resolve(result);
 					uninstall(check);
+					resolve(result);
 				}
 			} catch (e) {
 				reject(e);
@@ -84,6 +77,126 @@ function waitForTabs() {
 	return waitOnTabsUntil(areAllTabsComplete);
 }
 
+function leaveASingleTab() {
+	if (!originalTab)
+		originalTab = tabs[0];
+	if (originalTab.url != "about:blank")
+		throw new Error("Invalid start url: " + originalTab.url);
+	for (let tab of tabs) {
+		if (originalTab === tab)
+			continue;
+		tab.close();
+	}
+	return waitForTabs();
+}
+
+/*Helps to test waitUntil*/
+function Waiter(predicate) {
+	this.listener = null;
+	var waiter = this;
+	function uninstall(arg) {
+		if (arg != waiter.listener)
+			throw new Error("Listeners do not match");
+		waiter.listener = null;
+	}
+	this.promise = waitUntil(l => waiter.listener = l, uninstall, predicate);
+	this.result = null;
+	this.failure = null;
+	function resolve(r) {
+		console.log("Waiter resolved with", r);
+		waiter.result = r;
+	}
+	function reject(r) {
+		console.log("Waiter rejected with", r);
+		waiter.failure = r;
+	}
+	this.promise.then(resolve, reject);
+}
+
+function setTimeout(ms) {
+	return new Promise(function(resolve, reject) {
+		timers.setTimeout(resolve, ms);
+	});
+}
+
+function spawn(generatorFunc) {
+  function continuer(verb, arg) {
+    var result;
+    try {
+      result = generator[verb](arg);
+    } catch (err) {
+      return Promise.reject(err);
+    }
+    if (result.done) {
+      return result.value;
+    } else {
+      return Promise.resolve(result.value).then(onFulfilled, onRejected);
+    }
+  }
+  var generator = generatorFunc();
+  var onFulfilled = continuer.bind(continuer, "next");
+  var onRejected = continuer.bind(continuer, "throw");
+  return onFulfilled();
+}
+
+exports.testWaitUntilCompletion = function(runner) {
+	var predicateValue = false;
+	var predicateCallCount = 0;
+	function predicate() {
+		predicateCallCount++;
+		log("Predicate called ", predicateCallCount,  predicateValue);
+		return predicateValue;
+	}
+	var waiter = new Waiter(predicate);
+	var promise = spawn(function*() {
+		yield;
+		runner.assertFunction(waiter.listener);
+		runner.assertEqual(1, predicateCallCount);
+		runner.assertEqual(null, waiter.result);
+		runner.assertEqual(null, waiter.failure);
+		waiter.listener();
+		yield;
+		runner.assertEqual(2, predicateCallCount);
+		runner.assertEqual(null, waiter.result);
+		runner.assertEqual(null, waiter.failure);
+		predicateValue = "here  we are";
+		waiter.listener();
+		yield;
+		runner.assertEqual(3, predicateCallCount);
+		runner.assertEqual("here  we are", waiter.result);
+		runner.assertEqual(null, waiter.failure);
+		runner.assertEqual(null, waiter.listener);
+		return "Test success";
+	});
+	assertPromise(runner, promise.then(r => runner.assertEqual("Test success", r)));
+};
+
+exports.testWaitUntilFailure = function(runner) {
+	var predicateValue = false;
+	var predicateCallCount = 0;
+	var error = null;
+	function predicate() {
+		predicateCallCount++;
+		if (error)
+			throw error;
+		return predicateValue;
+	}
+	var waiter = new Waiter(predicate);
+	waiter.listener();
+	var promise = spawn(function*() {
+		runner.assertEqual(2, predicateCallCount);
+		runner.assertEqual(null, waiter.result);
+		runner.assertEqual(null, waiter.failure);
+		error = new Error("Legitimate failure");
+		waiter.listener();
+		yield;
+		runner.assertEqual(error, waiter.failure);
+		runner.assertEqual(null, waiter.result);
+	});
+	assertPromise(runner, promise);
+};
+
+
 function composePromises(promiseFactories, input) {
 	let promise = Promise.resolve(promiseFactories[0](input));
 	for (let i = 1; i < promiseFactories.length; i++) {
@@ -93,6 +206,18 @@ function composePromises(promiseFactories, input) {
 	return promise;
 }
 
+function assertPromise(runner, promise) {
+	runner.waitUntilDone(10000);
+	function done(value) {
+		log("Done invoked: ", value);
+		runner.done();
+	}
+	function fail(e) {
+		log("Fail invoked: ", e);
+		runner.fail(e);
+	}
+	promise.then(done, fail);
+}
 
 function prependPromise(prefixPromiseFactory, actionPromiseFactory) {
 	if (!prefixPromiseFactory.apply || !actionPromiseFactory.apply)
@@ -111,47 +236,31 @@ function doTabManipulations(steps) {
 	return composePromises(waiting);
 }
 
-function assertPromise(runner, promise) {
-	runner.waitUntilDone(10000);
-	let done = runner.done.bind(runner);
-	promise.then(done, done);
-}
-
 exports["test openNonDuplicate"] = function(runner) {
-	let promise = doTabManipulations(
-		[
-			leaveASingleTab,
-			function() {
-				return Promise.all([
-					openNew("about:blank", true),
-					openNew("http://ya.ru/", false)
-				]);
-			},
-			function(openedTabs) {
-				runner.assert(areAllTabsComplete(), "All tabs should be ready");
-				runner.assertEqual(3, tabs.length, "Both new tabs should be opened");
-				leaveASingleTab();
-			}
-		]
-	);
+	let promise = spawn(function*() {
+		let openedTabs = yield Promise.all([
+			openNew("about:blank", true),
+			openNew("http://ya.ru/", false)
+		]);
+		yield waitForTabs();
+		console.log("Tabs opened", openedTabs);
+		runner.assert(areAllTabsComplete(), "All tabs should be ready");
+		runner.assertEqual(3, tabs.length, "Both new tabs should be opened");
+		yield Promise.all([closeTab(openedTabs[0]), closeTab(openedTabs[1])]);
+	});
 	assertPromise(runner, promise);
 };
 
-exports1["test openDuplicate"] = function(runner) {
-	let promise = doTabManipulations(
-		[
-			leaveASingleTab,
-			function() {
-				openNew("http://ya.ru/", true);
-				openNew("http://ya.ru/", false);
-			},
-			function() {
-				runner.assert(areAllTabsComplete(), "All tabs should be ready");
-				runner.assertEqual(2, tabs.length, "Only one tab should left");
-			},
-			leaveASingleTab
-		]
-	);
-	
+exports["test openDuplicate"] = function(runner) {
+	let promise = spawn(function*() {
+		let openedTabs = yield Promise.all([
+			openNew("http://ya.ru/", true),
+			openNew("http://ya.ru/", false)
+		]);
+		yield waitForTabs();
+		runner.assert(areAllTabsComplete(), "All tabs should be ready");
+		runner.assertEqual(2, tabs.length, "Only one tab should left");
+		yield closeTab(openedTabs[0]);
+	});
 	assertPromise(runner, promise);
 };
