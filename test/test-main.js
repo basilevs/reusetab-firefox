@@ -29,8 +29,6 @@ function closeTab(tab) {
 	return new Promise(resolve => tab.close(resolve));
 }
 
-var originalTab = null;
-
 /*
 Resolves to predicate result when it becomes truth
 Arguments:
@@ -75,19 +73,6 @@ function waitOnTabsUntil(predicate) {
 // Resolves to truth when all tabs are complete or interactive
 function waitForTabs() {
 	return waitOnTabsUntil(areAllTabsComplete);
-}
-
-function leaveASingleTab() {
-	if (!originalTab)
-		originalTab = tabs[0];
-	if (originalTab.url != "about:blank")
-		throw new Error("Invalid start url: " + originalTab.url);
-	for (let tab of tabs) {
-		if (originalTab === tab)
-			continue;
-		tab.close();
-	}
-	return waitForTabs();
 }
 
 /*Helps to test waitUntil*/
@@ -196,16 +181,6 @@ exports.testWaitUntilFailure = function(runner) {
 	assertPromise(runner, promise);
 };
 
-
-function composePromises(promiseFactories, input) {
-	let promise = Promise.resolve(promiseFactories[0](input));
-	for (let i = 1; i < promiseFactories.length; i++) {
-		let step = promiseFactories[i];
-		promise = promise.then(value => Promise.resolve(step(value)));
-	}
-	return promise;
-}
-
 function assertPromise(runner, promise) {
 	runner.waitUntilDone(10000);
 	function done(value) {
@@ -217,23 +192,6 @@ function assertPromise(runner, promise) {
 		runner.fail(e);
 	}
 	promise.then(done, fail);
-}
-
-function prependPromise(prefixPromiseFactory, actionPromiseFactory) {
-	if (!prefixPromiseFactory.apply || !actionPromiseFactory.apply)
-		throw new Error("Both arguments should be  set");
-	return function(value) {
-		log("prependPromise", value);
-		prefixPromiseFactory().then(_ => actionPromiseFactory(value));
-	};
-}
-
-function doTabManipulations(steps) {
-	var waiting = [];
-	for (let step of steps) {
-		waiting.push(prependPromise(waitForTabs, step));
-	}
-	return composePromises(waiting);
 }
 
 exports["test openNonDuplicate"] = function(runner) {

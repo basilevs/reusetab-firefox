@@ -51,31 +51,33 @@ exports.expireAfter = function(assert) {
 
 exports.expireAfterInactivity = function(assert) {
 	let done = assert.done.bind(assert);
-	assert.waitUntilDone(300);
+	assert.waitUntilDone(600);
 
 	var i = 0;
 	function delegate() {
 		return i++;
 	}
-	var wrapped = utils.expireAfterInactivity(delegate, 100);
+	var wrapped = utils.expireAfterInactivity(delegate, 200);
 	assert.assertEqual(0, i, "Delegate is not called during wrapping");
 	wrapped();
 	assert.assertEqual(1, i, "Delegate is called immediately after creation");
 	
 	timers.setTimeout(function() {
+		assert.assertEqual(1, i, "State is unchanged");
 		wrapped();
 		assert.assertEqual(2, i, "Delegate is called before timeout");
-	}, 50);
+	}, 100);
 	timers.setTimeout(function() {
+		assert.assertEqual(2, i, "State is unchanged");
 		wrapped();
 		assert.assertEqual(3, i, "Delegate is called after timeout but before last call + timeout");
-	}, 120);
+	}, 250);
 	timers.setTimeout(function() {
-		assert.assertEqual(3, i, "Previous timer executed");
+		assert.assertEqual(3, i, "State is unchanged");
 		wrapped();
 		assert.assertEqual(3, i, "Delegate is not called after last call + timeout ");
 		done();
-	}, 250);
+	}, 500);
 
 };
 
