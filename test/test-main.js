@@ -202,7 +202,6 @@ exports["test openNonDuplicate"] = function(runner) {
 		]);
 		yield waitForTabs();
 		console.log("Tabs opened", openedTabs);
-		runner.assert(areAllTabsComplete(), "All tabs should be ready");
 		runner.assertEqual(3, tabs.length, "Both new tabs should be opened");
 		yield Promise.all([closeTab(openedTabs[0]), closeTab(openedTabs[1])]);
 	});
@@ -216,9 +215,21 @@ exports["test openDuplicate"] = function(runner) {
 			openNew("http://ya.ru/", false)
 		]);
 		yield waitForTabs();
-		runner.assert(areAllTabsComplete(), "All tabs should be ready");
 		runner.assertEqual(2, tabs.length, "Only one tab should left");
 		yield closeTab(openedTabs[0]);
+	});
+	assertPromise(runner, promise);
+};
+
+exports["test openPinnedDuplicate"] = function(runner) {
+	let promise = spawn(function*() {
+		let openedTabs = yield Promise.all([
+			openNew("http://ya.ru/", true),
+			openNew("http://ya.ru/", true)
+		]);
+		yield waitForTabs();
+		runner.assertEqual(3, tabs.length, "Both tabs should left");
+		yield Promise.all([closeTab(openedTabs[0]), closeTab(openedTabs[1])]);
 	});
 	assertPromise(runner, promise);
 };

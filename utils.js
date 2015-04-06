@@ -17,22 +17,27 @@ function expireAfter(callback, expirationTime) {
 	};
 }
 
+function expireAfterInactivityImpl(callback, timeout, now) {
+	var expirationTime = null;
+	return function() {
+		var time = now();
+		if (!expirationTime)
+			expirationTime = time + timeout;
+		log("Now: ", time % logModulus, ", expiration: ", expirationTime % logModulus, ", timeout: ", timeout);
+		if (time > expirationTime)
+			return true;
+		expirationTime = time + timeout;
+		return callback();
+	};
+}
+
+
 /*
 Blocks after a period of inactivity
 Starts accounting from the first call.
 */
 function expireAfterInactivity(callback, timeout) {
-	var expirationTime = null;
-	return function() {
-		var now = Date.now();
-		if (!expirationTime)
-			expirationTime = now + timeout;
-		log("Now: ", now % logModulus, ", expiration: ", expirationTime % logModulus, ", timeout: ", timeout);
-		if (now > expirationTime)
-			return true;
-		expirationTime = now + timeout;
-		return callback();
-	};
+	return expireAfterInactivityImpl(callback, timeout, Date.now);
 }
 
 
