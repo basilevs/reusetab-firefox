@@ -6,15 +6,23 @@ function log() {
 }
 
 const logModulus = 100000;
-/* Blocks after a specified time */
+/* Blocks after a specified moment in time
+	callback - a function to be called
+	expirationTime - a time in milliseconds since epoch
+	now - Date.now function
+*/
 function expireAfter(callback, expirationTime, now) {
 	if (!now)
 		now = Date.now;
 	return function() {
+		if (!callback)
+			return true;
 		var time = now();
 		log("Now: ", time % logModulus, ", expiration: ", expirationTime % logModulus);
-		if (time > expirationTime)
+		if (time > expirationTime) {
+			callback = null;
 			return true;
+		}
 		return callback();
 	};
 }
@@ -48,6 +56,8 @@ function blockAfterSuccess(callback) {
 			return success;
 		success = callback();
 		log("Result: " + success);
+		if (success)
+			callback = null;
 		return success;
 	};
 }
