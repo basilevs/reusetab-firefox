@@ -26,75 +26,68 @@ exports.blockAfterSuccess = function(assert) {
 };
 
 exports.expireAfter = function(assert) {
-	assert.waitUntilDone(200);
-	let done = assert.done.bind(assert);
 	var i = 0;
 	function delegate() {
 		return i++;
 	}
-	var wrapped = utils.expireAfter(delegate, Date.now()+100);
+	var now = 1000;
+	function getNow() {
+		return now;
+	}
+	var wrapped = utils.expireAfter(delegate, 1100, getNow);
 	assert.assertEqual(0, i, "Delegate is not called during wrapping");
 	wrapped();
 	assert.assertEqual(1, i, "Delegate is called immediately after creation");
-	
-	timers.setTimeout(function() {
-		wrapped();
-		assert.assertEqual(2, i, "Delegate is called before timeout 50 ms delay");
-	}, 50);
-	timers.setTimeout(function() {
-		assert.assertEqual(2, i, "Previous timer executed");
-		wrapped();
-		assert.assertEqual(2, i, "Delegate is not called after last call + timeout ");
-		done();
-	}, 120);
+	now = 1050;
+	wrapped();
+	assert.assertEqual(2, i, "Delegate is called before timeout 50 ms delay");
+	now = 1120;
+	assert.assertEqual(2, i, "Previous timer executed");
+	wrapped();
+	assert.assertEqual(2, i, "Delegate is not called after last call + timeout ");
 };
 
 exports.expireAfterInactivity = function(assert) {
-	let done = assert.done.bind(assert);
-	assert.waitUntilDone(600);
-
 	var i = 0;
+	var now = 0;
 	function delegate() {
 		return i++;
 	}
-	var wrapped = utils.expireAfterInactivity(delegate, 200);
+	function getNow() {
+		return now;
+	}
+	var wrapped = utils.expireAfterInactivity(delegate, 200, getNow);
 	assert.assertEqual(0, i, "Delegate is not called during wrapping");
 	wrapped();
 	assert.assertEqual(1, i, "Delegate is called immediately after creation");
-	
-	timers.setTimeout(function() {
-		assert.assertEqual(1, i, "State is unchanged");
-		wrapped();
-		assert.assertEqual(2, i, "Delegate is called before timeout");
-	}, 100);
-	timers.setTimeout(function() {
-		assert.assertEqual(2, i, "State is unchanged");
-		wrapped();
-		assert.assertEqual(3, i, "Delegate is called after timeout but before last call + timeout");
-	}, 250);
-	timers.setTimeout(function() {
-		assert.assertEqual(3, i, "State is unchanged");
-		wrapped();
-		assert.assertEqual(3, i, "Delegate is not called after last call + timeout ");
-		done();
-	}, 500);
-
+	now = 100;
+	assert.assertEqual(1, i, "State is unchanged");
+	wrapped();
+	assert.assertEqual(2, i, "Delegate is called before timeout");
+	now = 250;
+	assert.assertEqual(2, i, "State is unchanged");
+	wrapped();
+	assert.assertEqual(3, i, "Delegate is called after timeout but before last call + timeout");
+	now = 500;
+	assert.assertEqual(3, i, "State is unchanged");
+	wrapped();
+	assert.assertEqual(3, i, "Delegate is not called after last call + timeout ");
 };
 
 exports.expireAfterInactivity2 = function(assert) {
-	assert.waitUntilDone(200);
-	let done = assert.done.bind(assert);
 	var i = 0;
 	function delegate() {
 		return i++;
 	}
-	var wrapped = utils.expireAfterInactivity(delegate, 100);
-	timers.setTimeout(function() {
-		assert.assertEqual(0, i, "Delegate is not called during creation");
-		wrapped();
-		assert.assertEqual(1, i, "Delegate is called after creation + timeout");
-		done();
-	}, 120);
+	var now = 0;
+	function getNow() {
+		return now;
+	}
+	var wrapped = utils.expireAfterInactivity(delegate, 100, getNow);
+	now = 120;
+	assert.assertEqual(0, i, "Delegate is not called during creation");
+	wrapped();
+	assert.assertEqual(1, i, "Delegate is called after creation + timeout");
 };
 
 

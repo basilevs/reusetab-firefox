@@ -7,17 +7,25 @@ function log() {
 
 const logModulus = 100000;
 /* Blocks after a specified time */
-function expireAfter(callback, expirationTime) {
+function expireAfter(callback, expirationTime, now) {
+	if (!now)
+		now = Date.now;
 	return function() {
-		var now = Date.now();
-		log("Now: ", now % logModulus, ", expiration: ", expirationTime % logModulus);
-		if (now > expirationTime)
+		var time = now();
+		log("Now: ", time % logModulus, ", expiration: ", expirationTime % logModulus);
+		if (time > expirationTime)
 			return true;
 		return callback();
 	};
 }
 
-function expireAfterInactivityImpl(callback, timeout, now) {
+/*
+Blocks after a period of inactivity
+Starts accounting from the first call.
+*/
+function expireAfterInactivity(callback, timeout, now) {
+	if (!now)
+		now = Date.now;
 	var expirationTime = null;
 	return function() {
 		var time = now();
@@ -29,15 +37,6 @@ function expireAfterInactivityImpl(callback, timeout, now) {
 		expirationTime = time + timeout;
 		return callback();
 	};
-}
-
-
-/*
-Blocks after a period of inactivity
-Starts accounting from the first call.
-*/
-function expireAfterInactivity(callback, timeout) {
-	return expireAfterInactivityImpl(callback, timeout, Date.now);
 }
 
 
@@ -84,4 +83,4 @@ exports.expireAfter = expireAfter;
 exports.blockAfterSuccess = blockAfterSuccess;
 exports.log = log;
 exports.areUrlsEqualByHost = areUrlsEqualByHost;
-exports.expireAfterInactivity = expireAfterInactivity
+exports.expireAfterInactivity = expireAfterInactivity;
