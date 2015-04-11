@@ -1,5 +1,4 @@
 "use strict";
-
 const tabs = require("sdk/tabs");
 const timers = require('sdk/timers');
 require("../index");
@@ -104,27 +103,7 @@ function setTimeout(ms) {
 	});
 }
 
-function spawn(generatorFunc) {
-  function continuer(verb, arg) {
-    var result;
-    try {
-      result = generator[verb](arg);
-    } catch (err) {
-      return Promise.reject(err);
-    }
-    if (result.done) {
-      return result.value;
-    } else {
-      return Promise.resolve(result.value).then(onFulfilled, onRejected);
-    }
-  }
-  var generator = generatorFunc();
-  var onFulfilled = continuer.bind(continuer, "next");
-  var onRejected = continuer.bind(continuer, "throw");
-  return onFulfilled();
-}
-
-exports.testWaitUntilCompletion = function(runner) {
+exports.testWaitUntilCompletion = function*(assert) {
 	var predicateValue = false;
 	var predicateCallCount = 0;
 	function predicate() {
@@ -133,30 +112,28 @@ exports.testWaitUntilCompletion = function(runner) {
 		return predicateValue;
 	}
 	var waiter = new Waiter(predicate);
-	var promise = spawn(function*() {
-		yield;
-		runner.assertFunction(waiter.listener);
-		runner.assertEqual(1, predicateCallCount);
-		runner.assertEqual(null, waiter.result);
-		runner.assertEqual(null, waiter.failure);
-		waiter.listener();
-		yield;
-		runner.assertEqual(2, predicateCallCount);
-		runner.assertEqual(null, waiter.result);
-		runner.assertEqual(null, waiter.failure);
-		predicateValue = "here  we are";
-		waiter.listener();
-		yield;
-		runner.assertEqual(3, predicateCallCount);
-		runner.assertEqual("here  we are", waiter.result);
-		runner.assertEqual(null, waiter.failure);
-		runner.assertEqual(null, waiter.listener);
-		return "Test success";
-	});
-	assertPromise(runner, promise.then(r => runner.assertEqual("Test success", r)));
+	log("SPawned");
+	yield;
+	log("Yielded");
+	assert.ok(waiter.listener.apply);
+	assert.equal(1, predicateCallCount);
+	assert.equal(null, waiter.result);
+	assert.equal(null, waiter.failure);
+	waiter.listener();
+	yield;
+	assert.equal(2, predicateCallCount);
+	assert.equal(null, waiter.result);
+	assert.equal(null, waiter.failure);
+	predicateValue = "here  we are";
+	waiter.listener();
+	yield Promise.resolve();
+	assert.equal(3, predicateCallCount);
+	assert.equal("here  we are", waiter.result);
+	assert.equal(null, waiter.failure);
+	assert.equal(null, waiter.listener);
 };
 
-exports.testWaitUntilFailure = function(runner) {
+exports.testWaitUntilFailure = function*(assert) {
 	var predicateValue = false;
 	var predicateCallCount = 0;
 	var error = null;
@@ -168,68 +145,68 @@ exports.testWaitUntilFailure = function(runner) {
 	}
 	var waiter = new Waiter(predicate);
 	waiter.listener();
-	var promise = spawn(function*() {
-		runner.assertEqual(2, predicateCallCount);
-		runner.assertEqual(null, waiter.result);
-		runner.assertEqual(null, waiter.failure);
-		error = new Error("Legitimate failure");
-		waiter.listener();
-		yield;
-		runner.assertEqual(error, waiter.failure);
-		runner.assertEqual(null, waiter.result);
-	});
-	assertPromise(runner, promise);
+	assert.equal(2, predicateCallCount);
+	assert.equal(null, waiter.result);
+	assert.equal(null, waiter.failure);
+	error = new Error("Legitimate failure");
+	waiter.listener();
+	yield Promise.resolve();
+	assert.equal(error, waiter.failure);
+	assert.equal(null, waiter.result);
 };
 
-function assertPromise(runner, promise) {
-	runner.waitUntilDone(10000);
-	function done(value) {
+function assertPromise(assert, done, promise) {
+	function doneW(value) {
 		log("Done invoked: ", value);
-		runner.done();
+		done();
 	}
-	function fail(e) {
-		log("Fail invoked: ", e);
-		runner.fail(e);
+	function failW(e) {
+		assert.fail(e);
+		done();
 	}
-	promise.then(done, fail);
+	promise.then(doneW, failW);
 }
 
-exports["test openNonDuplicate"] = function(runner) {
-	let promise = spawn(function*() {
-		let openedTabs = yield Promise.all([
-			openNew("about:blank", true),
-			openNew("http://ya.ru/", false)
-		]);
-		yield waitForTabs();
-		console.log("Tabs opened", openedTabs);
-		runner.assertEqual(3, tabs.length, "Both new tabs should be opened");
-		yield Promise.all([closeTab(openedTabs[0]), closeTab(openedTabs[1])]);
-	});
-	assertPromise(runner, promise);
+exports["test openNonDuplicate"] = function*(assert) {
+	let openedTabs = yield Promise.all([
+		openNew("about:blank", true),
+		openNew("http://ya.ru/", false)
+	]);
+	yield waitForTabs();
+	console.log("Tabs opened", openedTabs);
+	assert.equal(3, tabs.length, "Both new tabs should be opened");
+	yield Promise.all([closeTab(openedTabs[0]), closeTab(openedTabs[1])]);
 };
 
-exports["test openDuplicate"] = function(runner) {
-	let promise = spawn(function*() {
-		let openedTabs = yield Promise.all([
-			openNew("http://ya.ru/", true),
-			openNew("http://ya.ru/", false)
-		]);
-		yield waitForTabs();
-		runner.assertEqual(2, tabs.length, "Only one tab should left");
-		yield closeTab(openedTabs[0]);
-	});
-	assertPromise(runner, promise);
+exports["test openDuplicate"] = function*(assert) {
+	let openedTabs = yield Promise.all([
+		openNew("http://ya.ru/", true),
+		openNew("http://ya.ru/", false)
+	]);
+	yield waitForTabs();
+	assert.equal(2, tabs.length, "Only one tab should left");
+	yield closeTab(openedTabs[0]);
 };
 
-exports["test openPinnedDuplicate"] = function(runner) {
-	let promise = spawn(function*() {
-		let openedTabs = yield Promise.all([
-			openNew("http://ya.ru/", true),
-			openNew("http://ya.ru/", true)
-		]);
-		yield waitForTabs();
-		runner.assertEqual(3, tabs.length, "Both tabs should left");
-		yield Promise.all([closeTab(openedTabs[0]), closeTab(openedTabs[1])]);
-	});
-	assertPromise(runner, promise);
+exports["test openPinnedDuplicate"] = function*(assert) {
+	let openedTabs = yield Promise.all([
+		openNew("http://ya.ru/", true),
+		openNew("http://ya.ru/", true)
+	]);
+	yield waitForTabs();
+	assert.equal(3, tabs.length, "Both tabs should left");
+	yield Promise.all([closeTab(openedTabs[0]), closeTab(openedTabs[1])]);
 };
+
+exports["test openRedirect"] = function*(assert) {
+	let openedTabs = yield Promise.all([
+		openNew("http://ya.ru/", true),
+		openNew("http://goo.gl/VuKfnS", false)
+	]);
+	yield waitForTabs();
+	assert.equal(2, tabs.length, "Only one tab should left");
+	yield closeTab(openedTabs[0]);
+};
+
+
+require("sdk/test").run(exports);
