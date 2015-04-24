@@ -77,10 +77,6 @@ tabs.on('open', handleTabOpen);
 
 require("sdk/system/unload").when(function() {
 	tabs.removeListener('open', handleTabOpen);
-	for (let tab of tabs) {
-		removeLocationListener(tab, handleTabUrl);
-		delete tab.reuseMonitor;
-	}
 });
 
 

@@ -90,8 +90,6 @@ exports.expireAfterInactivity2 = function(assert) {
 	assert.equal(1, i, "Delegate is called after creation + timeout");
 };
 
-
-
 exports["test areUrlsEqualByHost"] = function(assert) {
 	var areEqual = utils.areUrlsEqualByHost;
 	function assertEqual(url1, url2) {
@@ -103,4 +101,50 @@ exports["test areUrlsEqualByHost"] = function(assert) {
 	assertEqual("https://git.eclipse.org/r/#/q/is:watched+status:open", "https://git.eclipse.org/r/44335");
 	assertNotEqual("about:blank", "about:home");
 };
+
+exports["test multimap"] = function(assert) {
+	const dict = {};
+	const MultiMap = utils.MultiMap;
+	const mm = new MultiMap({
+		get: key => dict[key],
+		set: (key, value) => {dict[key] = value},
+		delete: key => delete dict[key]
+	});
+	let keyAdded = null;
+	let keyRemoved = null;
+	mm.onFirstValueAdded = key => keyAdded = key;
+	mm.onLastValueRemoved = key => keyRemoved = key;
+	assert.deepEqual([], mm.get(1), "Map should be initially empty");
+	mm.add(2, 3);
+	assert.equal(2, keyAdded, "Added hook called");
+	assert.equal(null, keyRemoved, "No keys are removed");
+	assert.deepEqual([3], mm.get(2), "Data is properly stored");
+	keyAdded = null;
+	keyRemoved = null;
+	mm.add(2, 4);
+	assert.equal(null, keyAdded, "Added hook is not called on second value");
+	assert.equal(null, keyRemoved, "No keys are removed");
+	assert.deepEqual([3, 4], mm.get(2), "Data is properly stored");
+	keyAdded = null;
+	keyRemoved = null;
+	mm.add(5, 6);
+	assert.equal(5, keyAdded, "Added hook is called on second key");
+	assert.equal(null, keyRemoved, "No keys are removed");
+	assert.deepEqual([3, 4], mm.get(2), "Data is not corrupted");
+	assert.deepEqual([6], mm.get(5), "Data is not corrupted");
+	keyAdded = null;
+	keyRemoved = null;
+	mm.remove(5, 6);
+	assert.equal(null, keyAdded, "Added hook is not called on second value");
+	assert.equal(5, keyRemoved, "Last value hook is called");
+	assert.deepEqual([3, 4], mm.get(2), "Data is not corrupted");
+	assert.deepEqual([], mm.get(5), "List is cleared");
+	keyAdded = null;
+	keyRemoved = null;
+	mm.remove(2, 3);
+	assert.equal(null, keyAdded, "Added hook is not called on second value");
+	assert.equal(null, keyRemoved, "No keys are removed");
+	assert.deepEqual([4], mm.get(2), "Data is properly stored");
+};
+
 require("sdk/test").run(exports);

@@ -47,7 +47,6 @@ function expireAfterInactivity(callback, timeout, now) {
 	};
 }
 
-
 /* Proxies notifications until callback returns truth */
 function blockAfterSuccess(callback) {
 	var success = false;
@@ -89,8 +88,63 @@ function areUrlsEqualByHost(url1, url2) {
 	return false;
 }
 
+/*
+	Manages a map of lists
+	Functionality is delegated to contructor argument.
+	It should have get(key), set(key, value) and delete(key) methods
+*/
+function MultiMap(map) {
+	if (!map.get.apply || !map.set.apply)
+		throw new Error("Atgument should have get and set methods");
+	this.map = map;
+}
+
+function remove(array, value) {
+	var index;
+	while ((index = array.indexOf(value)) != -1) {
+		array.splice(index, 1);
+	}
+}
+
+MultiMap.prototype = {
+	onFirstValueAdded: function(key) {},
+	onLastValueRemoved: function(key) {},
+	add: function (key, value) {
+		let current = this.map.get(key);
+		if (current) {
+			if (current.length <= 0)
+				throw new Error("There should be no empty arrays in map");
+		} else {
+			this.map.set(key, current = []);
+			this.onFirstValueAdded(key);
+		}
+		current.push(value);
+	},
+	remove: function(key, value) {
+		let current = this.map.get(key);
+		if (current) {
+			if (current.length <= 0)
+				throw new Error("There should be no empty arrays in map");
+			remove(current, value);
+			if (current.length <= 0) {
+				this.onLastValueRemoved(key);
+				this.map.delete(key);
+			}
+		}
+	},
+	get: function(key) {
+		let current = this.map.get(key);
+		if (!current)
+			return [];
+		if (current.length <= 0)
+			throw new Error("There should be no empty arrays in map");
+		return current.slice();
+	}
+};
+
 exports.expireAfter = expireAfter;
 exports.blockAfterSuccess = blockAfterSuccess;
 exports.log = log;
 exports.areUrlsEqualByHost = areUrlsEqualByHost;
 exports.expireAfterInactivity = expireAfterInactivity;
+exports.MultiMap = MultiMap;
