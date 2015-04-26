@@ -70,7 +70,7 @@ function handleTabOpen(newTab) {
 	addLocationListener(newTab, monitor);
 	// No handling should be done to old tabs, this may surprize user
 	// This also prevents listener leaks
-	setTimeout(() => removeLocationListener(newtTab, monitor), 6000);
+	setTimeout(() => removeLocationListener(newTab, monitor), 6000);
 	monitor();
 }
 
