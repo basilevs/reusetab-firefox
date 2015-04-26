@@ -76,3 +76,7 @@ function handleTabOpen(newTab) {
 
 // Listen for tab openings.
 tabs.on('open', handleTabOpen);
+
+require("sdk/system/unload").when(function() {
+	tabs.removeListener('open', handleTabOpen);
+});
