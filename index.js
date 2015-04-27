@@ -1,6 +1,6 @@
 "use strict";
 const tabs = require("sdk/tabs");
-const {areUrlsEqualByHost, blockAfterSuccess, expireAfter, log} = require("./utils");
+const {areUrlsEqualByHost, blockAfterSuccess, log} = require("./utils");
 const {addLocationListener, removeLocationListener} = require("./location");
 const { setTimeout } = require("sdk/timers");
 
