@@ -1,7 +1,7 @@
-var utils = require("../utils");
-var timers = require("sdk/timers");
+const utils = require("../utils");
+const timers = require("sdk/timers");
 
-exports.blockAfterSuccess = function(assert) {
+exports.testBlockAfterSuccess = function(assert) {
 	var i = 0;
 	var delegate = function() {
 		i++;
@@ -22,7 +22,7 @@ exports.blockAfterSuccess = function(assert) {
 		throw new Error("Legitimate error");
 	};
 	wrapped = utils.blockAfterSuccess(delegate);
-	assert.okRaises(wrapped, "Legitimate error", "Exception propagates fine");
+	assert.throws(wrapped, /Legitimate error/, "Exception propagates fine");
 };
 
 exports["test areUrlsEqualByHost"] = function(assert) {

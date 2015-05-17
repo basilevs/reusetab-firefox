@@ -1,7 +1,11 @@
 "use strict";
-var urls = require("sdk/url");
+const urls = require("sdk/url");
 
 function debug() {
+	// Debug logs are not visible in production with default settings
+	// https://developer.mozilla.org/en-US/Add-ons/SDK/Tools/console#Logging_Levels
+
+	// The following is nevertheless commented out to adhere to reviewer request.
 	//console.debug.apply(console, Array.prototype.slice.call(arguments));
 }
 
