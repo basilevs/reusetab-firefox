@@ -1,0 +1,7 @@
+README.md
+.git
+.gitignore
+.jpmignore
+.gitattributes
+*.xpi
+test

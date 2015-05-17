@@ -113,7 +113,7 @@ exports.testWaitUntilCompletion = function*(assert) {
 		return predicateValue;
 	}
 	var waiter = new Waiter(predicate);
-	log("SPawned");
+	log("Spawned");
 	yield;
 	log("Yielded");
 	assert.ok(waiter.listener.apply);

@@ -5,6 +5,6 @@
   "description": "Keeps tab count low by closing duplicates and reusing pinned tabs",
   "author": "Vasili Gulevich",
   "license": "MPL 2.0",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "homepage": "https://github.com/basilevs/reusetab-firefox"
 }
