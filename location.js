@@ -29,7 +29,7 @@ var progressListener = {
 function getBrowserForModel(tab) {
 	const view = viewFor(tab);
 	if (!view)
-		throw new Error("Failed to get view for tab " + tab.id);
+		return null;
 	const browser = getBrowserForTab(view);
 	if (!browser)
 		throw new Error("Failed to get browser for tab " + tab.id);
@@ -53,7 +53,10 @@ function removeLocationListener(tab, callback) {
 	var index = listeners.indexOf(callback);
 	listeners.splice(index, 1);
 	if (!listeners.length) {
-		getBrowserForModel(tab).removeProgressListener(progressListener);
+		const browser = getBrowserForModel(tab);
+		//View can already be closed at this point, check for undefined
+		if (browser)
+			browser.removeProgressListener(progressListener);
 		delete ns.locationChangeListeners;
 	}
 }

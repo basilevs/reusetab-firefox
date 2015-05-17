@@ -3,6 +3,7 @@ const tabs = require("sdk/tabs");
 const timers = require('sdk/timers');
 require("../index");
 const exports1=[];
+const urlToTest = "http://yastatic.net/morda-logo/i/logo.svg";
 
 function log() {
 	console.log.apply(console, Array.prototype.slice.call(arguments));
@@ -155,22 +156,10 @@ exports.testWaitUntilFailure = function*(assert) {
 	assert.equal(null, waiter.result);
 };
 
-function assertPromise(assert, done, promise) {
-	function doneW(value) {
-		log("Done invoked: ", value);
-		done();
-	}
-	function failW(e) {
-		assert.fail(e);
-		done();
-	}
-	promise.then(doneW, failW);
-}
-
 exports["test openNonDuplicate"] = function*(assert) {
 	let openedTabs = yield Promise.all([
 		openNew("about:blank", true),
-		openNew("http://ya.ru/", false)
+		openNew(urlToTest, false)
 	]);
 	yield waitForTabs();
 	console.log("Tabs opened", openedTabs);
@@ -180,8 +169,8 @@ exports["test openNonDuplicate"] = function*(assert) {
 
 exports["test openDuplicate"] = function*(assert) {
 	let openedTabs = yield Promise.all([
-		openNew("http://ya.ru/", true),
-		openNew("http://ya.ru/", false)
+		openNew(urlToTest, true),
+		openNew(urlToTest, false)
 	]);
 	yield waitForTabs();
 	assert.equal(2, tabs.length, "Only one tab should left");
@@ -190,8 +179,8 @@ exports["test openDuplicate"] = function*(assert) {
 
 exports["test openPinnedDuplicate"] = function*(assert) {
 	let openedTabs = yield Promise.all([
-		openNew("http://ya.ru/", true),
-		openNew("http://ya.ru/", true)
+		openNew(urlToTest, true),
+		openNew(urlToTest, true)
 	]);
 	yield waitForTabs();
 	assert.equal(3, tabs.length, "Both tabs should left");
@@ -200,8 +189,8 @@ exports["test openPinnedDuplicate"] = function*(assert) {
 
 exports["test openRedirect"] = function*(assert) {
 	let openedTabs = yield Promise.all([
-		openNew("http://ya.ru/", true),
-		openNew("http://goo.gl/VuKfnS", false)
+		openNew(urlToTest, true),
+		openNew("http://goo.gl/SxsRNG", false)
 	]);
 	yield waitForTabs();
 	assert.equal(2, tabs.length, "Only one tab should left");
