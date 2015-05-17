@@ -7,14 +7,14 @@ const {Ci, Cu} = require("chrome");
 const {viewFor} = require('sdk/view/core');
 const {modelFor} = require('sdk/model/core');
 const {getTabForBrowser, getBrowserForTab, getTabForContentWindow} = require("sdk/tabs/utils");
-const {log} = require("./utils");
+const {debug} = require("./utils");
 const namespace = require('sdk/core/namespace').ns();
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
 
 var progressListener = {
     QueryInterface: XPCOMUtils.generateQI([Ci.nsIWebProgressListener, Ci.nsISupportsWeakReference]),
     onLocationChange: function(aProgress, aRequest, aURI) {
-		log("onLocationChange ");
+		debug("onLocationChange ");
 		const view = getTabForContentWindow(aProgress.DOMWindow);
 		const model = modelFor(view);
 		const listeners = namespace(model).locationChangeListeners;
@@ -28,9 +28,11 @@ var progressListener = {
 
 function getBrowserForModel(tab) {
 	const view = viewFor(tab);
+	if (!view)
+		throw new Error("Failed to get view for tab " + tab.id);
 	const browser = getBrowserForTab(view);
 	if (!browser)
-		throw new Error("Failed to get brwoser for tab " + tab.id);
+		throw new Error("Failed to get browser for tab " + tab.id);
 	return browser;
 }
 

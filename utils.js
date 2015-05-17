@@ -1,8 +1,8 @@
 "use strict";
 var urls = require("sdk/url");
 
-function log() {
-	console.debug.apply(console, Array.prototype.slice.call(arguments));
+function debug() {
+	//console.debug.apply(console, Array.prototype.slice.call(arguments));
 }
 
 /* Proxies notifications until callback returns truth */
@@ -12,7 +12,7 @@ function blockAfterSuccess(callback) {
 		if (success)
 			return success;
 		success = callback();
-		log("Result: " + success);
+		debug("Result: " + success);
 		if (success)
 			callback = null;
 		return success;
@@ -31,7 +31,7 @@ function getHost(url) {
  Returns boolean.
 */
 function areUrlsEqualByHost(url1, url2) {
-	log("Matching urls " + url1 + " and " + url2);
+	debug("Matching urls " + url1 + " and " + url2);
 	const host1 = getHost(url1);
 	const host2 = getHost(url2);
 	// On statrtup all tabs have about:blank or about:home urls for a short while.
@@ -40,7 +40,7 @@ function areUrlsEqualByHost(url1, url2) {
 		return false;
 	}
 	if (host1 == host2) {
-		log("Hosts are same: " + host1);
+		debug("Hosts are same: " + host1);
 		return true;
 	}
 	return false;
@@ -48,5 +48,5 @@ function areUrlsEqualByHost(url1, url2) {
 
 
 exports.blockAfterSuccess = blockAfterSuccess;
-exports.log = log;
+exports.debug = debug;
 exports.areUrlsEqualByHost = areUrlsEqualByHost;

@@ -1,6 +1,6 @@
 "use strict";
 const tabs = require("sdk/tabs");
-const {areUrlsEqualByHost, blockAfterSuccess, log} = require("./utils");
+const {areUrlsEqualByHost, blockAfterSuccess, debug} = require("./utils");
 const {addLocationListener, removeLocationListener} = require("./location");
 const { setTimeout } = require("sdk/timers");
 
@@ -11,12 +11,12 @@ function isDuplicateTab(pinnedTab, newTab) {
 		return false;
 	if (newTab.isPinned)
 		return false;
-	log("Matching tabs ", pinnedTab.id, " and ", newTab.id);
+	debug("Matching tabs ", pinnedTab.id, " and ", newTab.id);
 	return areUrlsEqualByHost(pinnedTab.url, newTab.url);
 }
 
 function open(tab, url, activate) {
-	log("Navigating from ", tab.url, " to ", url, " in tab ", tab.id);
+	debug("Navigating from ", tab.url, " to ", url, " in tab ", tab.id);
 	tab.url = url;
 	if (activate)
 		tab.activate();
@@ -24,7 +24,7 @@ function open(tab, url, activate) {
 
 function closeAndReopen(newTab, pinnedTab, activate) {
 	open(pinnedTab, newTab.url, activate);
-	log("Closing tab " + newTab.id);
+	debug("Closing tab " + newTab.id);
 	newTab.close();
 	return true;
 }
@@ -41,7 +41,7 @@ function handleTabUrl(newTab) {
 		return false;
 	if (newTab.isPinned) //Optimization. Another check is done in isDuplicateTab().
 		return false;
-	log("Handling ",  newTab.id);
+	debug("Handling ",  newTab.id);
 	if (newTab.url == "about:newtab")
 		return true;
 	for (let tab of tabs) {
@@ -58,7 +58,7 @@ function handleTabUrl(newTab) {
 }
 
 function handleTabOpen(newTab) {
-	log("Tab " + newTab.id + " opened, url: " + newTab.url + ", state: " + newTab.readyState);
+	debug("Tab " + newTab.id + " opened, url: " + newTab.url + ", state: " + newTab.readyState);
 	var monitor = handleTabUrl.bind(null, newTab);
 	// There is no need to monitor it after succesful detection of duplicate
 	monitor = blockAfterSuccess(monitor);
