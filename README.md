@@ -8,3 +8,5 @@ If a new tab is created for a host that is already shown in pinned tabs, new tab
 Install from [add-on page](https://addons.mozilla.org/firefox/addon/reuse-tab/)
 
 Original idea: [reusetab-chrome](https://github.com/rjregenold/reusetab-chrome)
+
+<!-- Вася любит плюшки -->
