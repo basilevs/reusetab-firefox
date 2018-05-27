@@ -1,0 +1,18 @@
+{
+  "description": "Reuse pinned tabs for new pages of same site",
+  "homepage_url": "https://github.com/basilevs/reusetab-firefox",
+  "manifest_version": 2,
+  "name": "Reuse Tab",
+  "permissions": [
+    "tabs"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "version": "0.7",
+  "incognito": "not_allowed",
+  "developer": {
+    "name": "Vasili Gulevich",
+    "url": "https://addons.mozilla.org/ru/firefox/user/basilevs/"
+  }
+}
