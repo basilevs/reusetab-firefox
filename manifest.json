@@ -12,7 +12,9 @@
   "version": "0.7",
   "incognito": "not_allowed",
   "developer": {
-    "name": "Vasili Gulevich",
-    "url": "https://addons.mozilla.org/ru/firefox/user/basilevs/"
+    "name": "Vasili Gulevich"
+  },
+  "icons": {
+    "48": "icon.png"
   }
 }
