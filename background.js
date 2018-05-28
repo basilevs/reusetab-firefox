@@ -73,6 +73,8 @@ function isDuplicateTab(pinnedTab, newTab) {
 	return areUrlsEqualByHost(pinnedTab.url, newTab.url);
 }
 
+
+const watchedTabs = {};
 const tabs = browser.tabs;
 
 if (!tabs)
@@ -133,8 +135,6 @@ async function tryReuseTab(tab) {
   }
 }
 
-const watchedTabs = {};
-
 tabs.onCreated.addListener(tab => {
   logFunction("onCreated", tab);
   const tabId = tab.id;
@@ -159,7 +159,5 @@ tabs.onUpdated.addListener((tabId, change, tab) => {
   }
   tryReuseTab(tab).catch(e => handleError(e));
 });
-
-
 
 debug("startup complete");
