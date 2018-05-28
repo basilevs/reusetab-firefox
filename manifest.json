@@ -10,7 +10,6 @@
     "scripts": ["background.js"]
   },
   "version": "0.7",
-  "incognito": "not_allowed",
   "developer": {
     "name": "Vasili Gulevich"
   },
