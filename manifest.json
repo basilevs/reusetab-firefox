@@ -15,5 +15,10 @@
   },
   "icons": {
     "48": "icon.png"
+  },
+  "applications": {
+    "gecko": {
+      "id": "jid1-K8e1vROHVMoXWQ@jetpack"
+     }
   }
 }
