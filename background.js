@@ -1,7 +1,7 @@
 "use strict";
 
 function debug() {
-  //console.debug.apply(console, arguments);
+  console.debug.apply(console, arguments);
 }
 
 function handleError() {
@@ -58,7 +58,7 @@ function isDuplicateTab(pinnedTab, newTab) {
     return false;
 	if (newTab.pinned)
 		return false;
-  if (newTab.openerTabId === pinnedTab.id)
+  if (pinnedTab.id === newTab.openerTabId)
     return false;
 	debug("Matching tabs ", pinnedTab.id, " and ", newTab.id);
 	return areUrlsEqualByHost(pinnedTab.url, newTab.url);
@@ -91,15 +91,19 @@ async function reopenIn(originTab, targetTab) {
     }
 }
 
-async function tryReuseTab(tab) {
+async function findDuplicate(tab) {
+  if (!tab)
+    return null;
   if (!tab.url)
-    return;
+    return null;
+  if (tab.pinned)
+    return null;
   if (tab.status !== "loading")
-    return; 
+    return null; 
   debug("Tab detected: ", tab);
   const host = getHost(tab.url);
   if (!host)
-    return;
+    return null;
   const tabQuery = {
       pinned: true,
       url: "*://"+host+"/*",
@@ -112,13 +116,22 @@ async function tryReuseTab(tab) {
       continue;
     if (!isDuplicateTab(pinnedTab, tab))
       continue;  
+    return pinnedTab;
+  }
+}
+
+async function tryReuseTab(tab) {
+  const duplicate = await findDuplicate(tab);
+  if (duplicate) {
     debug("reopening");
-    await reopenIn(tab, pinnedTab);
-    break;
+    await reopenIn(tab, duplicate);
   }
 }
 
 function handleUpdate(tabId, change, tab) {
+  if (!change.url)
+    return;
+  //logFunction("handleUpdate", arguments);
   tryReuseTab(tab).catch(e => handleError(e));
 }
 
