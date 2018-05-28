@@ -1,7 +1,7 @@
 "use strict";
 
 function debug() {
-  console.debug.apply(console, arguments);
+  //console.debug.apply(console, arguments);
 }
 
 function handleError() {
@@ -15,16 +15,25 @@ function handleError() {
   console.error.apply(console, message);
 }
 
-function logFunction(name, args) {
+function logFunction(name, ...args) {
   debug(name, ...args);
 }
 
-debug("Reuse Tab starting");
+debug("starting");
 
-function getHost(url) {
+function removeByValue(array, value) {
+  var index = array.indexOf(value);
+  if (index !== - 1) array.splice(index, 1);
+}
+
+function getOrigin(url) {
 	if (!url)
 		return null;
-	return new URL(url).host;
+  return new URL(url).origin;
+}
+
+function getComparisonKey(url) {
+  return getOrigin(url);
 }
 
 /*
@@ -33,16 +42,15 @@ function getHost(url) {
  Returns boolean.
 */
 function areUrlsEqualByHost(url1, url2) {
-	debug("Matching urls " + url1 + " and " + url2);
-	const host1 = getHost(url1);
-	const host2 = getHost(url2);
+	logFunction("areUrlsEqualByHost", url1, url2);
+	const host1 = getComparisonKey(url1);
+	const host2 = getComparisonKey(url2);
 	// On statrtup all tabs have about:blank or about:home urls for a short while.
 	// These should not be considered equal and are not a subject for squash
 	if (!host1 || !host2) {
 		return false;
 	}
 	if (host1 == host2) {
-		debug("Hosts are same: " + host1);
 		return true;
 	}
 	return false;
@@ -54,13 +62,14 @@ function areUrlsEqualByHost(url1, url2) {
 function isDuplicateTab(pinnedTab, newTab) {
 	if (!pinnedTab.pinned)
 		return false;
+  if (pinnedTab.hidden)
+    return false;
   if (newTab.hidden)
     return false;
 	if (newTab.pinned)
 		return false;
   if (pinnedTab.id === newTab.openerTabId)
     return false;
-	debug("Matching tabs ", pinnedTab.id, " and ", newTab.id);
 	return areUrlsEqualByHost(pinnedTab.url, newTab.url);
 }
 
@@ -69,9 +78,14 @@ const tabs = browser.tabs;
 if (!tabs)
   throw new Error("Tabs are not available");
 
-const removedTabs = [];
 async function reopenIn(originTab, targetTab) {
-    debug("Navigating from ", targetTab.url, " to ", originTab.url, " in tab ", targetTab.id);
+    logFunction("reopenIn", originTab, targetTab);
+    try {
+      await tabs.remove(originTab.id);
+    } catch(e) {
+      handleError("Failed to remove a tab: ", e);
+      return;
+    }
     try {
       await tabs.update(targetTab.id, {
         active: originTab.active,
@@ -81,32 +95,22 @@ async function reopenIn(originTab, targetTab) {
       handleError("Failed to perform navigation", e);
       return;
     }
-    try {
-      if (!removedTabs.includes(originTab.id)) {
-        removedTabs.push(originTab.id);
-        await tabs.remove(originTab.id);
-      }
-    } catch (e) {
-      handleError("Failed to remove a tab: ", e);
-    }
 }
 
 async function findDuplicate(tab) {
+   logFunction("findDuplicate", tab);
   if (!tab)
     return null;
   if (!tab.url)
     return null;
   if (tab.pinned)
     return null;
-  if (tab.status !== "loading")
-    return null; 
-  debug("Tab detected: ", tab);
-  const host = getHost(tab.url);
-  if (!host)
+  const origin = getOrigin(tab.url);
+  if (!origin)
     return null;
   const tabQuery = {
       pinned: true,
-      url: "*://"+host+"/*",
+      url: origin+"/*",
       status: "complete",
       windowType: "normal"
   };
@@ -115,26 +119,47 @@ async function findDuplicate(tab) {
     if (tab === pinnedTab)
       continue;
     if (!isDuplicateTab(pinnedTab, tab))
-      continue;  
+      continue;
+  	debug("Matching pinned tab found:", tab, pinnedTab);
     return pinnedTab;
   }
+  debug("No matching pinned tab", tab);
 }
 
 async function tryReuseTab(tab) {
   const duplicate = await findDuplicate(tab);
   if (duplicate) {
-    debug("reopening");
     await reopenIn(tab, duplicate);
   }
 }
 
-function handleUpdate(tabId, change, tab) {
+const watchedTabs = {};
+
+tabs.onCreated.addListener(tab => {
+  logFunction("onCreated", tab);
+  const tabId = tab.id;
+  watchedTabs[tabId] = {
+    active: tab.active,
+    created: tab.lastAccessed 
+  };
+  setTimeout(() => delete watchedTabs[tabId], 10000);
+});
+
+tabs.onUpdated.addListener((tabId, change, tab) => {
+  logFunction("onUpdated", tabId, change, tab);
   if (!change.url)
     return;
-  //logFunction("handleUpdate", arguments);
+  const watched = watchedTabs[tabId];
+  if (!watched)
+    return;
+  // If user has interacted with tab, it should not be closed, handle only automated redirects.
+  if (watched.created != tab.lastAccessed) {
+    delete watchedTabs[tabId];
+    return;
+  }
   tryReuseTab(tab).catch(e => handleError(e));
-}
+});
 
-tabs.onUpdated.addListener(handleUpdate);
 
-debug("Reuse Tab startup complete");
+
+debug("startup complete");
