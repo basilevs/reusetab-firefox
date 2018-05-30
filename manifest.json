@@ -10,9 +10,7 @@
     "scripts": ["background.js"]
   },
   "version": "0.7",
-  "developer": {
-    "name": "Vasili Gulevich"
-  },
+  "author": "Vasili Gulevich",
   "icons": {
     "48": "icon.png"
   },
