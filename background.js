@@ -21,11 +21,6 @@ function logFunction(name, ...args) {
 
 debug("starting");
 
-function removeByValue(array, value) {
-  var index = array.indexOf(value);
-  if (index !== - 1) array.splice(index, 1);
-}
-
 function getOrigin(url) {
 	if (!url)
 		return null;
