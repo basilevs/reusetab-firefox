@@ -1,7 +1,7 @@
 "use strict";
 
 function debug() {
-  // console.debug.apply(console, arguments);
+  //console.debug.apply(console, arguments);
 }
 
 function handleError() {
@@ -128,7 +128,9 @@ async function tryReuseTab(tab) {
   const duplicate = await findDuplicate(tab);
   if (duplicate) {
     await reopenIn(tab, duplicate);
+    return true;
   }
+  return false;
 }
 
 tabs.onCreated.addListener(tab => {
@@ -148,13 +150,9 @@ tabs.onUpdated.addListener((tabId, change, tab) => {
   const watched = watchedTabs[tabId];
   if (!watched)
     return;
-  // If user has interacted with tab, it should not be closed, handle only automated redirects.
-  if (watched.created != tab.lastAccessed) {
-	debug("Interaction detected with tab",tabId);
-    delete watchedTabs[tabId];
-    return;
-  }
-  tryReuseTab(tab).catch(e => handleError(e));
+  tryReuseTab(tab)
+  	.then(reused => delete watchedTabs[tabId])
+  	.catch(e => handleError(e));
 });
 
 debug("startup complete");
