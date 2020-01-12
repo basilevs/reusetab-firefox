@@ -118,6 +118,7 @@ async function findDuplicate(tab) {
         status: "complete",
         windowType: "normal"
     };
+    logFunction("query", tabQuery);
     const pinnedTabs = await tabs.query(tabQuery);
     for (let pinnedTab of pinnedTabs) {
         if (tab === pinnedTab)

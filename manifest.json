@@ -4,11 +4,15 @@
   "manifest_version": 2,
   "name": "Reuse Tab",
   "permissions": [
-    "tabs"
+    "tabs",
+    "storage"
   ],
   "incognito": "not_allowed",
   "background": {
     "page": "background.html"
+  },
+  "options_ui": {
+    "page": "options.html"
   },
   "version": "0.10",
   "author": "Vasili Gulevich",
