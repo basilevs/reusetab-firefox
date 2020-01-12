@@ -12,7 +12,9 @@ function checkTab(tab) {
 }
 
 const defaultConfiguration =
-`https://([^/]+)/.*
+`https://(?:www.spotify.com|www.open.spotify.com)/.*
+https://www.google.com/maps.*
+https://([^/]+)/.*
 http://([^/]+)/.*
 `;
 
@@ -58,20 +60,23 @@ class RegexMatcher {
         const input1 = "" + targetTab.url;
         const input2 = "" + sourceTab.url;
         for (const matcher of this.matchers) {
-            this.debug("Matching", input1, "does not match", input2, "with matcher", matcher);
+            this.debug("Matching", input1, input2, "with matcher", matcher);
             const match1 = matcher.exec(input1);
             const match2 = matcher.exec(input2);
-            if (!match1)
-                continue;
-            if (!match2)
-                continue;
+            if (match1 || match2) {
+                this.debug("Match!", match1, match2);
 
-            match1.shift();
-            match2.shift();
+                if (!match1)
+                    return false;
+                if (!match2)
+                    return false;
 
-            this.debug("Match!", match1, match2);
+                match1.shift();
+                match2.shift();
 
-            return areArraysEqual(match1, match2);
+
+                return areArraysEqual(match1, match2);
+            }
         }
         return false;
     }

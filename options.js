@@ -24,7 +24,11 @@ function reset(event) {
 function setPatterns(data) {
     debug("Resetting patterns", data);
     if (!data) {
-        data = "https://([^/]+)/.*\nhttp://([^/]+)/.*";
+        data =
+`https://(?:www.spotify.com|www.open.spotify.com)/.*
+https://www.google.com/maps.*
+https://([^/]+)/.*
+http://([^/]+)/.*`;
     }
     text.value = data;
 }
