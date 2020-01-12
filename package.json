@@ -9,6 +9,9 @@
   },
   "dependencies": {},
   "webExt" : {
-    "ignoreFiles": ["package.json", "package-lock.json"]
+    "ignoreFiles": ["package.json", "package-lock.json"],
+    "run": {
+      "browserConsole": false
+    }
   }
 }
