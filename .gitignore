@@ -46,3 +46,4 @@ Temporary Items
 *.log
 web-ext-artifacts
 /node_modules/
+/.idea/
