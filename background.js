@@ -136,8 +136,10 @@ tabs.onUpdated.addListener((tabId, change, tab) => {
     }
     logFunction("onUpdated", tabId, change, tab);
     tryReuseTab(tab)
-        .then(() => delete watchedTabs[tabId])
-        .catch(e => handleError(e));
+        .then((wasReused) => {
+            if (wasReused) delete watchedTabs[tabId];
+        })
+        .catch(e => handleError(e))
 });
 
 debug("startup complete");
