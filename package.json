@@ -1,0 +1,14 @@
+{
+  "name": "reusetab-firefox",
+  "version": "1.0.0",
+  "devDependencies": {
+    "web-ext": "^4.0.0"
+  },
+  "scripts": {
+    "start:firefox": "web-ext run --firefox=firefoxdeveloperedition --source-dir ./"
+  },
+  "dependencies": {},
+  "webExt" : {
+    "ignoreFiles": ["package.json", "package-lock.json"]
+  }
+}

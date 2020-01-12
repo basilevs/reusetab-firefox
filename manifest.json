@@ -6,10 +6,11 @@
   "permissions": [
     "tabs"
   ],
+  "incognito": "not_allowed",
   "background": {
-    "scripts": ["background.js"]
+    "page": "background.html"
   },
-  "version": "0.9",
+  "version": "0.10",
   "author": "Vasili Gulevich",
   "icons": {
     "48": "icon.png"
