@@ -1,7 +1,7 @@
 "use strict";
 
-function matchStrings(input1, input2, matcher) {
-    return true;
+function areArraysEqual(array1, array2) {
+    return array1.length === array2.length && array1.every((value, index) => value === array2[index]);
 }
 
 function checkTab(tab) {
@@ -22,7 +22,7 @@ class RegexMatcher {
     }
 
     static parsePatterns(regexPatternsAsText, handleErrors) {
-        if (!(typeof regexPatternsAsText) == "string")
+        if (typeof regexPatternsAsText !== "string")
             throw new Error("Regex matcher only accepts a list of patterns separated by a newline symbol");
         let lines = regexPatternsAsText.split("\n");
         let result = [];
@@ -55,11 +55,23 @@ class RegexMatcher {
     match(targetTab, sourceTab) {
         checkTab(targetTab);
         checkTab(sourceTab);
+        const input1 = "" + targetTab.url;
+        const input2 = "" + sourceTab.url;
         for (const matcher of this.matchers) {
-            if (matchStrings("" + targetTab.url, "" + sourceTab.url, matcher)) {
-                this.debug(sourceTab.url + " matches " + targetTab.url + " with pattern " + matcher);
-                return true;
-            }
+            this.debug("Matching", input1, "does not match", input2, "with matcher", matcher);
+            const match1 = matcher.exec(input1);
+            const match2 = matcher.exec(input2);
+            if (!match1)
+                continue;
+            if (!match2)
+                continue;
+
+            match1.shift();
+            match2.shift();
+
+            this.debug("Match!", match1, match2);
+
+            return areArraysEqual(match1, match2);
         }
         return false;
     }

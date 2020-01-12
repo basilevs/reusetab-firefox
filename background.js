@@ -24,44 +24,7 @@ function logFunction(name, ...args) {
 
 debug("starting");
 
-let matcher = new RegexMatcher(RegexMatcher.parsePatterns(
-    RegexMatcher.defaultPatterns(), (line, error) => debug(`Failed to parse line ${line}: ${error}`)),
-    debug);
-
-function getOrigin(url) {
-    if (!url)
-        return null;
-    return new URL(url).origin;
-}
-
-function getComparisonKey(url) {
-    return getOrigin(url);
-}
-
-/*
- Checks if hosts of urls are equal.
- Accepts urls in a string form.
- Returns boolean.
-*/
-function areUrlsEqualByHost(url1, url2) {
-    logFunction("areUrlsEqualByHost", url1, url2);
-    const host1 = getComparisonKey(url1);
-    const host2 = getComparisonKey(url2);
-    // On statrtup all tabs have about:blank or about:home urls for a short while.
-    // These should not be considered equal and are not a subject for squash
-    if (!host1 || !host2) {
-        return false;
-    }
-    if (host1 == host2) {
-        return true;
-    }
-    return false;
-}
-
-
-// Returns true if newTab should be squashed into pinnedTab
-// Main business logic of this plugin
-function isDuplicateTab(pinnedTab, newTab) {
+function isEligibleForSquash(pinnedTab, newTab) {
     if (!pinnedTab.pinned)
         return false;
     if (pinnedTab.hidden)
@@ -70,9 +33,25 @@ function isDuplicateTab(pinnedTab, newTab) {
         return false;
     if (newTab.pinned)
         return false;
-    if (pinnedTab.id === newTab.openerTabId)
-        return false;
-    return matcher.match(pinnedTab, newTab);
+    return pinnedTab.id !== newTab.openerTabId;
+}
+
+// Returns true if newTab should be squashed into pinnedTab
+// Main business logic of this plugin
+// Actual work is done by returned delegate
+async function shouldSquashPredicate() {
+    const data = await browser.storage.sync.get("patterns");
+    let patterns = data.patterns;
+    if (!patterns) {
+        patterns = RegexMatcher.defaultPatterns();
+    }
+    let matcher = new RegexMatcher(RegexMatcher.parsePatterns(patterns, (line, error) => debug(`Failed to parse line ${line}: ${error}`)),
+        debug);
+    return (pinnedTab, newTab)  => {
+        if (!isEligibleForSquash(pinnedTab, newTab))
+            return false;
+        return matcher.match(pinnedTab, newTab);
+    };
 }
 
 
@@ -97,7 +76,6 @@ async function reopenIn(originTab, targetTab) {
         });
     } catch (e) {
         handleError("Failed to perform navigation", e);
-        return;
     }
 }
 
@@ -109,12 +87,9 @@ async function findDuplicate(tab) {
         return null;
     if (tab.pinned)
         return null;
-    const origin = getOrigin(tab.url);
-    if (!origin)
-        return null;
+    const shouldSquash = await shouldSquashPredicate();
     const tabQuery = {
         pinned: true,
-        url: origin + "/*",
         status: "complete",
         windowType: "normal"
     };
@@ -123,12 +98,12 @@ async function findDuplicate(tab) {
     for (let pinnedTab of pinnedTabs) {
         if (tab === pinnedTab)
             continue;
-        if (!isDuplicateTab(pinnedTab, tab))
+        if (!shouldSquash(pinnedTab, tab))
             continue;
         debug("Matching pinned tab found:", tab, pinnedTab);
         return pinnedTab;
     }
-    debug("No matching pinned tab", tab);
+    debug("No matching pinned tab", tab, pinnedTabs);
 }
 
 async function tryReuseTab(tab) {
@@ -161,7 +136,7 @@ tabs.onUpdated.addListener((tabId, change, tab) => {
     }
     logFunction("onUpdated", tabId, change, tab);
     tryReuseTab(tab)
-        .then(reused => delete watchedTabs[tabId])
+        .then(() => delete watchedTabs[tabId])
         .catch(e => handleError(e));
 });
 
