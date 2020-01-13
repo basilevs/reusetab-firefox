@@ -69,11 +69,13 @@ async function reopenIn(originTab, targetTab) {
         handleError("Failed to remove a tab: ", e);
         return;
     }
+    const updateRequest = {
+        active: originTab.active
+    };
+    if (targetTab.url !== originTab.url)
+        updateRequest.url = originTab.url;
     try {
-        await tabs.update(targetTab.id, {
-            active: originTab.active,
-            url: originTab.url
-        });
+        await tabs.update(targetTab.id, updateRequest);
     } catch (e) {
         handleError("Failed to perform navigation", e);
     }

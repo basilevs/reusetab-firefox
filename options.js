@@ -1,5 +1,15 @@
 const form = document.querySelector('form');
 const text = form.querySelector('#regular_expressions_text');
+if (!text)
+    throw new Error("Patterns textarea is not found");
+
+const sync = browser.storage.sync;
+if (!sync)
+    throw new Error("Storage is not available");
+
+
+const backgroundPage = browser.runtime.getBackgroundPage();
+const defaultPatternsPromise = backgroundPage.then(x => x.defaultPatterns);
 
 function debug() {
     console.debug.apply(console, arguments);
@@ -11,7 +21,7 @@ function onError(error) {
 
 function submit(event) {
     debug("Form submitted", event, text.value);
-    browser.storage.sync.set({
+    sync.set({
         "patterns": text.value
     });
 }
@@ -21,20 +31,18 @@ function reset(event) {
     setPatterns(null);
 }
 
-function setPatterns(data) {
+async function setPatterns(data) {
     debug("Resetting patterns", data);
     if (!data) {
-        data =
-`https://(?:www.spotify.com|www.open.spotify.com)/.*
-https://www.google.com/maps.*
-https://([^/]+)/.*
-http://([^/]+)/.*`;
+        data = await defaultPatternsPromise;
+        if (!data)
+            throw new Error("No default patterns found");
     }
     text.value = data;
 }
 
 function restore() {
-    browser.storage.sync.get("patterns").then(d => setPatterns(d.patterns), onError);
+    sync.get("patterns").then(d => setPatterns(d.patterns), onError);
 }
 
 restore();
