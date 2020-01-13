@@ -1,87 +1,88 @@
 "use strict";
 
+import {RegexMatcher} from "./matcher.mjs";
+
+
+const tabs = browser.tabs;
+
+if (!tabs)
+    throw new Error("Tabs are not available");
+
+const sync = browser.storage.sync;
+if (!sync)
+    throw new Error("Synchronized storage area is not found");
+
+const backgroundPage = browser.runtime.getBackgroundPage();
+
+if (!backgroundPage)
+    throw new Error("Background page is not found");
+
+const defaultPatterns = RegexMatcher.defaultPatterns();
+window.defaultPatterns = defaultPatterns;
+
 function debug() {
-  //console.debug.apply(console, arguments);
+    console.debug.apply(console, arguments);
 }
 
 function handleError() {
-  const message = [];
-  message.push(...arguments);
-  if (arguments.length > 0) {
-    if (arguments[0].stack) {
-      message.push(arguments[0].stack);
+    const message = [];
+    message.push(...arguments);
+    if (arguments.length > 0) {
+        if (arguments[0].stack) {
+            message.push(arguments[0].stack);
+        }
     }
-  }
-  console.error.apply(console, message);
+    console.error.apply(console, message);
 }
 
 function logFunction(name, ...args) {
-  debug(name, ...args);
+    debug(name, ...args);
 }
 
 debug("starting");
 
-function getOrigin(url) {
-	if (!url)
-		return null;
-  return new URL(url).origin;
+function isEligibleForSquash(pinnedTab, newTab) {
+    if (!pinnedTab.pinned)
+        return false;
+    if (pinnedTab.hidden)
+        return false;
+    if (newTab.hidden)
+        return false;
+    if (newTab.pinned)
+        return false;
+    return pinnedTab.id !== newTab.openerTabId;
 }
 
-function getComparisonKey(url) {
-  return getOrigin(url);
+async function getMatcher() {
+    const data = await sync.get("patterns");
+    let patterns = data.patterns;
+    if (!patterns) {
+        patterns = defaultPatterns;
+    }
+    patterns = RegexMatcher.сonvertLinesToRegExp(patterns);
+    return new RegexMatcher(patterns, debug);
 }
-
-/*
- Checks if hosts of urls are equal.
- Accepts urls in a string form.
- Returns boolean.
-*/
-function areUrlsEqualByHost(url1, url2) {
-	logFunction("areUrlsEqualByHost", url1, url2);
-	const host1 = getComparisonKey(url1);
-	const host2 = getComparisonKey(url2);
-	// On statrtup all tabs have about:blank or about:home urls for a short while.
-	// These should not be considered equal and are not a subject for squash
-	if (!host1 || !host2) {
-		return false;
-	}
-	if (host1 == host2) {
-		return true;
-	}
-	return false;
-}
-
 
 // Returns true if newTab should be squashed into pinnedTab
 // Main business logic of this plugin
-function isDuplicateTab(pinnedTab, newTab) {
-	if (!pinnedTab.pinned)
-		return false;
-  if (pinnedTab.hidden)
-    return false;
-  if (newTab.hidden)
-    return false;
-	if (newTab.pinned)
-		return false;
-  if (pinnedTab.id === newTab.openerTabId)
-    return false;
-	return areUrlsEqualByHost(pinnedTab.url, newTab.url);
+// Actual work is done by returned delegate
+async function shouldSquashPredicate() {
+    let matcher = await getMatcher();
+    return (pinnedTab, newTab)  => {
+        if (!isEligibleForSquash(pinnedTab, newTab))
+            return false;
+        return matcher.match(pinnedTab, newTab);
+    };
 }
 
-
 const watchedTabs = {};
-const tabs = browser.tabs;
-
-if (!tabs)
-  throw new Error("Tabs are not available");
-
 async function reopenIn(originTab, targetTab) {
     logFunction("reopenIn", originTab, targetTab);
     try {
-      await tabs.remove(originTab.id);
-    } catch(e) {
-      handleError("Failed to remove a tab: ", e);
-      return;
+        await tabs.remove(originTab.id);
+    } catch (e) {
+        handleError("Failed to remove a tab: ", e);
+        return;
     }
     const updateRequest = {
         active: originTab.active
@@ -96,64 +97,68 @@ async function reopenIn(originTab, targetTab) {
 }
 
 async function findDuplicate(tab) {
-   logFunction("findDuplicate", tab);
-  if (!tab)
-    return null;
-  if (!tab.url)
-    return null;
-  if (tab.pinned)
-    return null;
-  const origin = getOrigin(tab.url);
-  if (!origin)
-    return null;
-  const tabQuery = {
-      pinned: true,
-      url: origin+"/*",
-      status: "complete",
-      windowType: "normal"
-  };
-  const pinnedTabs = await tabs.query(tabQuery);
-  for (let pinnedTab of pinnedTabs) {
-    if (tab === pinnedTab)
-      continue;
-    if (!isDuplicateTab(pinnedTab, tab))
-      continue;
-  	debug("Matching pinned tab found:", tab, pinnedTab);
-    return pinnedTab;
-  }
-  debug("No matching pinned tab", tab);
+    logFunction("findDuplicate", tab);
+    if (!tab)
+        return null;
+    if (!tab.url)
+        return null;
+    if (tab.pinned)
+        return null;
+    const shouldSquash = await shouldSquashPredicate();
+    const tabQuery = {
+        pinned: true,
+        status: "complete",
+        windowType: "normal"
+    };
+    logFunction("query", tabQuery);
+    const pinnedTabs = await tabs.query(tabQuery);
+    for (let pinnedTab of pinnedTabs) {
+        if (tab === pinnedTab)
+            continue;
+        if (!shouldSquash(pinnedTab, tab))
+            continue;
+        debug("Matching pinned tab found:", tab, pinnedTab);
+        return pinnedTab;
+    }
+    debug("No matching pinned tab", tab, pinnedTabs);
 }
 
 async function tryReuseTab(tab) {
-  logFunction("tryReuseTab", tab);
-  const duplicate = await findDuplicate(tab);
-  if (duplicate) {
-    await reopenIn(tab, duplicate);
-    return true;
-  }
-  return false;
+    logFunction("tryReuseTab", tab);
+    const duplicate = await findDuplicate(tab);
+    if (duplicate) {
+        await reopenIn(tab, duplicate);
+        return true;
+    }
+    return false;
 }
 
 tabs.onCreated.addListener(tab => {
-  logFunction("onCreated", tab);
-  const tabId = tab.id;
-  watchedTabs[tabId] = {
-    active: tab.active,
-    created: tab.lastAccessed 
-  };
-  setTimeout(() => delete watchedTabs[tabId], 10000);
+    logFunction("onCreated", tab);
+    const tabId = tab.id;
+    watchedTabs[tabId] = {
+        active: tab.active,
+        created: tab.lastAccessed
+    };
+    setTimeout(() => delete watchedTabs[tabId], 10000);
 });
 
 tabs.onUpdated.addListener((tabId, change, tab) => {
-  logFunction("onUpdated", tabId, change, tab);
-  if (!change.url)
-    return;
-  const watched = watchedTabs[tabId];
-  if (!watched)
-    return;
-  tryReuseTab(tab)
-  	.then(reused => delete watchedTabs[tabId])
-  	.catch(e => handleError(e));
+    if (!change.url)
+        return;
+    const watched = watchedTabs[tabId];
+    if (!watched) {
+        debug("Tab " + tabId + " is not watched");
+        return;
+    }
+    logFunction("onUpdated", tabId, change, tab);
+    tryReuseTab(tab)
+        .then((wasReused) => {
+            if (wasReused) delete watchedTabs[tabId];
+        })
+        .catch(e => handleError(e))
 });
+
+getMatcher().catch(handleError);
 
 debug("startup complete");
