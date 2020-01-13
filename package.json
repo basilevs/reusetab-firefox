@@ -9,8 +9,11 @@
     "build": "web-ext build --source-dir ./"
   },
   "dependencies": {},
-  "webExt" : {
-    "ignoreFiles": ["package.json", "package-lock.json"],
+  "webExt": {
+    "ignoreFiles": [
+      "package.json",
+      "package-lock.json"
+    ],
     "run": {
       "browserConsole": false
     }

@@ -1,4 +1,3 @@
-
 const storage = browser.storage;
 const sync = storage.sync;
 if (!sync)
@@ -44,13 +43,15 @@ async function setPatterns(data) {
     debug("Resetting patterns", data);
     if (!data)
         throw new Error("Empty argument");
-    matchingPatternsText.value = data.join("\n");;
+    matchingPatternsText.value = data.join("\n");
+    ;
 }
 
 function wrapErrors(asyncFunction) {
     function wrapper(...args) {
         asyncFunction(...args).catch(onError);
     }
+
     return wrapper;
 }
 
@@ -89,6 +90,7 @@ apply_multidomain.addEventListener("click", wrapErrors(async () => {
 async function restore() {
     await setPatterns(await loadPatterns());
 }
+
 const matchingPatternsText = form.querySelector('#regular_expressions_text');
 if (!matchingPatternsText)
     throw new Error("Patterns textarea is not found");
@@ -104,10 +106,10 @@ form.querySelector("#default").addEventListener("click", wrapErrors(async event 
 }));
 form.querySelector("#restore").addEventListener("click", wrapErrors(restore));
 storage.onChanged.addListener(wrapErrors(async (changes, areaName) => {
-   if (areaName !== "sync")
-       return;
-   if (changes.patterns) {
-       await restore();
-   }
+    if (areaName !== "sync")
+        return;
+    if (changes.patterns) {
+        await restore();
+    }
 }));
 restore().catch(onError);

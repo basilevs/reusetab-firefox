@@ -12,13 +12,26 @@ function checkTab(tab) {
 }
 
 const defaultConfiguration = [
-'https://(?:www\\.spotify\\.com|www\\.open\\.spotify\\.com)/.*',
-'https://www\\.google\\.com/maps.*',
-'https://([^/]+)/.*',
-'http://([^/]+)/.*'
+    'https://(?:www\\.spotify\\.com|www\\.open\\.spotify\\.com)/.*',
+    'https://www\\.google\\.com/maps.*',
+    'https://([^/]+)/.*',
+    'http://([^/]+)/.*'
 ];
 
 class RegexMatcher {
+    constructor(regexps, debug) {
+        if (!Array.isArray(regexps))
+            throw new Error("An array is expected");
+        for (const regex of regexps) {
+            if (!regex instanceof RegExp) {
+                throw new Error("An array of regular expressions is expected");
+            }
+        }
+        this.matchers = regexps;
+        this.debug = debug;
+        debug(`Constructed RegexMatcher with ${regexps.length} patterns \n` + regexps);
+    }
+
     static defaultPatterns() {
         return defaultConfiguration;
     }
@@ -43,19 +56,6 @@ class RegexMatcher {
             }
         }
         return result;
-    }
-
-    constructor(regexps, debug) {
-        if (!Array.isArray(regexps))
-            throw new Error("An array is expected");
-        for (const regex of regexps) {
-            if (!regex instanceof  RegExp) {
-                throw new Error("An array of regular expressions is expected");
-            }
-        }
-        this.matchers = regexps;
-        this.debug = debug;
-        debug(`Constructed RegexMatcher with ${regexps.length} patterns \n` + regexps);
     }
 
     match(targetTab, sourceTab) {

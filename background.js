@@ -68,7 +68,7 @@ async function getMatcher() {
 // Actual work is done by returned delegate
 async function shouldSquashPredicate() {
     let matcher = await getMatcher();
-    return (pinnedTab, newTab)  => {
+    return (pinnedTab, newTab) => {
         if (!isEligibleForSquash(pinnedTab, newTab))
             return false;
         return matcher.match(pinnedTab, newTab);
@@ -76,6 +76,7 @@ async function shouldSquashPredicate() {
 }
 
 const watchedTabs = {};
+
 async function reopenIn(originTab, targetTab) {
     logFunction("reopenIn", originTab, targetTab);
     try {
