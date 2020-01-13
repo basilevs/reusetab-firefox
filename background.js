@@ -3,6 +3,19 @@
 import {RegexMatcher} from "./matcher.mjs";
 
 
+const tabs = browser.tabs;
+
+if (!tabs)
+    throw new Error("Tabs are not available");
+
+const backgroundPage = browser.runtime.getBackgroundPage();
+
+if (!backgroundPage)
+    throw new Error("Background page is not found");
+
+const defaultPatterns = RegexMatcher.defaultPatterns();
+window.defaultPatterns = defaultPatterns;
+
 function debug() {
     console.debug.apply(console, arguments);
 }
@@ -43,7 +56,7 @@ async function shouldSquashPredicate() {
     const data = await browser.storage.sync.get("patterns");
     let patterns = data.patterns;
     if (!patterns) {
-        patterns = RegexMatcher.defaultPatterns();
+        patterns = defaultPatterns;
     }
     let matcher = new RegexMatcher(RegexMatcher.parsePatterns(patterns, (line, error) => debug(`Failed to parse line ${line}: ${error}`)),
         debug);
@@ -54,13 +67,7 @@ async function shouldSquashPredicate() {
     };
 }
 
-
 const watchedTabs = {};
-const tabs = browser.tabs;
-
-if (!tabs)
-    throw new Error("Tabs are not available");
-
 async function reopenIn(originTab, targetTab) {
     logFunction("reopenIn", originTab, targetTab);
     try {
