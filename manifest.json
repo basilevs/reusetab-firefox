@@ -6,6 +6,7 @@
   "permissions": [
     "tabs"
   ],
+  "incognito": "not_allowed",
   "background": {
     "scripts": ["background.js"]
   },
