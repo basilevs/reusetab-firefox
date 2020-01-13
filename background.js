@@ -8,6 +8,10 @@ const tabs = browser.tabs;
 if (!tabs)
     throw new Error("Tabs are not available");
 
+const sync = browser.storage.sync;
+if (!sync)
+    throw new Error("Synchronized storage area is not found");
+
 const backgroundPage = browser.runtime.getBackgroundPage();
 
 if (!backgroundPage)
@@ -49,17 +53,21 @@ function isEligibleForSquash(pinnedTab, newTab) {
     return pinnedTab.id !== newTab.openerTabId;
 }
 
-// Returns true if newTab should be squashed into pinnedTab
-// Main business logic of this plugin
-// Actual work is done by returned delegate
-async function shouldSquashPredicate() {
-    const data = await browser.storage.sync.get("patterns");
+async function getMatcher() {
+    const data = await sync.get("patterns");
     let patterns = data.patterns;
     if (!patterns) {
         patterns = defaultPatterns;
     }
-    let matcher = new RegexMatcher(RegexMatcher.parsePatterns(patterns, (line, error) => debug(`Failed to parse line ${line}: ${error}`)),
-        debug);
+    patterns = RegexMatcher.сonvertLinesToRegExp(patterns);
+    return new RegexMatcher(patterns, debug);
+}
+
+// Returns true if newTab should be squashed into pinnedTab
+// Main business logic of this plugin
+// Actual work is done by returned delegate
+async function shouldSquashPredicate() {
+    let matcher = await getMatcher();
     return (pinnedTab, newTab)  => {
         if (!isEligibleForSquash(pinnedTab, newTab))
             return false;
@@ -150,5 +158,7 @@ tabs.onUpdated.addListener((tabId, change, tab) => {
         })
         .catch(e => handleError(e))
 });
+
+getMatcher().catch(handleError);
 
 debug("startup complete");

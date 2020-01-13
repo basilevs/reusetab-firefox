@@ -11,12 +11,12 @@ function checkTab(tab) {
         throw new Error("Tab should have URL");
 }
 
-const defaultConfiguration =
-`https://(?:www.spotify.com|www.open.spotify.com)/.*
-https://www.google.com/maps.*
-https://([^/]+)/.*
-http://([^/]+)/.*
-`;
+const defaultConfiguration = [
+'https://(?:www\\.spotify\\.com|www\\.open\\.spotify\\.com)/.*',
+'https://www\\.google\\.com/maps.*',
+'https://([^/]+)/.*',
+'http://([^/]+)/.*'
+];
 
 class RegexMatcher {
     static defaultPatterns() {
@@ -27,6 +27,10 @@ class RegexMatcher {
         if (typeof regexPatternsAsText !== "string")
             throw new Error("Regex matcher only accepts a list of patterns separated by a newline symbol");
         let lines = regexPatternsAsText.split("\n");
+        return сonvertLinesToRegExp(lines, handleErrors);
+    }
+
+    static сonvertLinesToRegExp(lines, handleErrors) {
         let result = [];
         for (const i in lines) {
             try {

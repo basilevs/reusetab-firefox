@@ -6,26 +6,26 @@
 </head>
 <body>
 <form>
+    <h1>Blacklist</h1>
+    <input type="text" id="blacklist_text" placeholder="Blacklist a site on an URL to require exact URL match to be closed or reused." style="width: 100%">
+    <button type="button" id="blacklist" disabled="true">Blacklist</button>
+    <h2>Multidomain</h2>
+    <textarea id="multidomain_text" placeholder="Enter two or more sites to treat as the same site.&#10;One site per line.&#10;Then hit &quot;Apply&quot;." rows="3" style="width: 100%"></textarea>
+    <button type="button" disabled="true" accesskey="a" id="apply_multidomain">Apply</button>
     <h1>Matching Patterns</h1>
     <textarea placeholder="Enter patterns" id="regular_expressions_text" rows="20" style="width: 100%"></textarea>
     <br/>
     <button type="button" accesskey="d" id="default">Default</button>
-    <button type="button" accesskey="r" id="restore">Restore</button>
+    <button type="button" accesskey="r" id="restore">Load</button>
     <button type="button" accesskey="s" id="save">Save</button>
 </form>
-<h1>Usage</h1>
-<h2>Blacklist</h2>
-<p>To prevent a site from being reused, add an expression at the top:<pre><code>https://site_name.com/(.*)</code></pre>
-<p>To prevent a page from being reused, add an expression at the top:<pre><code>https://site_name.com/page/.*</code></pre>
-<h2>Multidomain</h2>
-<p>To treat two or more sites as the same site, add an expression at the top: <pre><code>https://(?:site1.com|site2.com)/.*</code></pre>
 <script src="options.js"></script>
 <h2>Technical information</h2>
 <p>
     Each line of configuration above is a regular expression. Tab is reused if a regular expression matches both target and source URLs and all capture groups of both matches are equal.
     Tab is not reused, if only one of target or source URLs are matching an expression.
     In examples above, blacklisting is achieved by introducing a capture group with value, that would be different for different pages of the same site; multidomain expression, ignores a segment of URl during matching by using non-capturing group, which is not used during comparison.
-    First matching expression terminates further search, so higher expression have higher priority.
+    First matching expression terminates further search.
 </p>
 
 </body>
