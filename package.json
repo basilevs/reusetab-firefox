@@ -5,7 +5,8 @@
     "web-ext": "^4.0.0"
   },
   "scripts": {
-    "start:firefox": "web-ext run --firefox=firefoxdeveloperedition --source-dir ./"
+    "start": "web-ext run --firefox=firefoxdeveloperedition --source-dir ./",
+    "build": "web-ext build --source-dir ./"
   },
   "dependencies": {},
   "webExt" : {
