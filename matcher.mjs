@@ -12,6 +12,7 @@ function checkTab(tab) {
 }
 
 const defaultConfiguration = [
+    'https://mail\\.google\\.com/mail/u/(\d+).*'
     'https://(?:www\\.spotify\\.com|www\\.open\\.spotify\\.com)/.*',
     'https://www\\.google\\.com/maps.*',
     'https://([^/]+)/.*',
