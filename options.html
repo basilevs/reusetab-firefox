@@ -5,17 +5,26 @@
     <title>ReuseTab Options</title>
 </head>
 <body>
-<form>
-    <h1>Blacklist</h1>
-    <input id="blacklist_text" placeholder="Blacklist a site on an URL to require exact URL match to be closed or reused."
+<h1>Blacklist</h1>
+<form id="blacklist_form">
+    <input id="blacklist_text"
+           placeholder="Blacklist a site on an URL to require exact URL match to be closed or reused."
+           required
+           pattern="(?:[^\]\[)(]+\.)+\w+"
            style="width: 100%"
            type="text">
-    <button disabled="true" id="blacklist" type="button">Blacklist</button>
-    <h2>Multidomain</h2>
+    <button id="blacklist_button" disabled=true type="submit">Blacklist</button>
+</form>
+<h2>Multidomain</h2>
+<form id="multidomain_form">
     <textarea id="multidomain_text"
               placeholder="Enter two or more sites to treat as the same site.&#10;One site per line.&#10;Then hit &quot;Apply&quot;."
+              required
+              pattern="(?:(?:[^\][)(]+\.)+\w+\n){2,}"
               rows="3" style="width: 100%"></textarea>
-    <button accesskey="a" disabled="true" id="apply_multidomain" type="button">Apply</button>
+    <button accesskey="a" disabled="true" id="apply_multidomain" type="submit">Apply</button>
+</form>
+<form id="patterns_form">
     <h1>Matching Patterns</h1>
     <textarea id="regular_expressions_text" placeholder="Enter patterns" rows="20" style="width: 100%"></textarea>
     <br/>
