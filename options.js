@@ -68,16 +68,15 @@ function disableIfInvalid(input, button) {
         let choice = blacklist_text.value;
         choice = choice.replace(/[.]/g, "\\.");
         await addPattern(".*" + choice + "(.*)");
-        blacklist_text.value = "";
     }));
 }
 
 
 {
-    const site_match = /(?:[^\]\[)(]+\.)+\w+/;
+    const site_match = /(?:[^\][)(]+\.)+\w+/;
     const form = document.querySelector('form#multidomain_form');
-    const multidomain_text = form.querySelector("textarea#multidomain_text");
-    const apply_multidomain = form.querySelector("#apply_multidomain");
+    const multidomain_text = form.querySelector("textarea");
+    const apply_multidomain = form.querySelector("button");
     disableIfInvalid(multidomain_text, apply_multidomain);
     multidomain_text.addEventListener("input", () => {
         let array = multidomain_text.value.split("\n");
