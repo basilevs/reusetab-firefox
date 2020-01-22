@@ -8,19 +8,18 @@
 <h1>Blacklist</h1>
 <form id="blacklist_form">
     <input id="blacklist_text"
-           placeholder="Blacklist a site on an URL to require exact URL match to be closed or reused."
+           placeholder="Blacklist an URL to require exact match for its tab to be closed or reused."
            required
-           pattern="(?:[^\]\[)(]+\.)+\w+"
            style="width: 100%"
-           type="text">
-    <button id="blacklist_button" disabled=true type="submit">Blacklist</button>
+           type="URL">
+    <button id="blacklist_button" disabled type="submit">Blacklist</button>
 </form>
 <h2>Multidomain</h2>
 <form id="multidomain_form">
-    <textarea placeholder="Enter two or more sites to treat as the same site.&#10;One site per line.&#10;Then hit &quot;Apply&quot;."
+    <textarea placeholder="Enter two or more URLs to treat as the same site.&#10;One URL per line.&#10;Then hit &quot;Apply&quot;."
               required
               rows="3" style="width: 100%"></textarea>
-    <button accesskey="a" disabled="true" type="submit">Apply</button>
+    <button accesskey="a" disabled type="submit">Apply</button>
 </form>
 <form id="patterns_form">
     <h1>Matching Patterns</h1>

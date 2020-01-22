@@ -67,39 +67,57 @@ function disableIfInvalid(input, button) {
             return;
         let choice = blacklist_text.value;
         choice = choice.replace(/[.]/g, "\\.");
-        await addPattern(".*" + choice + "(.*)");
+        await addPattern(choice + "(.*)");
     }));
 }
 
 
 {
-    const site_match = /(?:[^\][)(]+\.)+\w+/;
     const form = document.querySelector('form#multidomain_form');
     const multidomain_text = form.querySelector("textarea");
     const apply_multidomain = form.querySelector("button");
-    disableIfInvalid(multidomain_text, apply_multidomain);
+
+    function checkURL(string) {
+        try {
+            new URL(string)
+        } catch (e) {
+            return e.message;
+        }
+        return "";
+    }
+
+    function massage(array) {
+        array = array.filter(s => !!s);
+        array = Array.from(new Set(array));
+        return array;
+    }
+
     multidomain_text.addEventListener("input", () => {
         let array = multidomain_text.value.split("\n");
-        array = array.filter(s => !!s);
+        array = massage(array);
         let error = "";
-        if (!array.every( line => site_match.test(line) )) {
-            error = "Only sites are allowed";
-        } else {
+        for (const url of array) {
+            const e = checkURL(url);
+            if (e) {
+                error = e;
+                break;
+            }
+        }
+        if (!error) {
             if (array.length < 2) {
-                error = "Add another site";
+                error = "Add another URL";
             }
         }
         multidomain_text.setCustomValidity(error);
     });
     apply_multidomain.addEventListener("click", wrapErrors(async () => {
         let choice = multidomain_text.value.split("\n");
-        choice = choice.filter(s => !!s);
+        choice = massage(choice);
         choice = choice.join("|");
         choice = choice.replace(/[.]/g, "\\.");
-        await addPattern(`https://(?:${choice})/.*`, `http://(?:${choice})/.*`);
-        multidomain_text.value = "";
-        apply_multidomain.disabled = true;
+        await addPattern(`(?:${choice}).*`);
     }));
+    disableIfInvalid(multidomain_text, apply_multidomain);
 }
 
 {
