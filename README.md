@@ -1,5 +1,5 @@
 # Reuse Tab
-for Firefox
+for [Firefox Desktop](https://www.mozilla.org/en-US/firefox/new/)
 
 Reuses pinned tabs, instead of opening new ones
 
