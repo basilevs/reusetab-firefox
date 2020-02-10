@@ -149,12 +149,18 @@ function disableIfInvalid(input, button) {
         await setPatterns(await defaultPatternsPromise);
     }));
     form.querySelector("#restore").addEventListener("click", wrapErrors(restore));
-    storage.onChanged.addListener(wrapErrors(async (changes, areaName) => {
+    const storageListener = wrapErrors(async (changes, areaName) => {
         if (areaName !== "sync")
             return;
         if (changes.patterns) {
             await restore();
         }
-    }));
+    });
+    const onChanged = storage.onChanged;
+    onChanged.addListener(storageListener);
+    // If listeners are not cleaned up, exception occurs on page refresh:
+    // sendRemoveListener on closed conduit jid1-K8e1vROHVMoXWQ@jetpack.274877907499
+    window.addEventListener("unload", () => onChanged.removeListener(storageListener));
+
     restore().catch(onError);
 }
