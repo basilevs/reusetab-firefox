@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>ReuseTab Options</title>
+    <script src="matcher.mjs" type="module"></script>
 </head>
 <body>
 <h1>Blacklist</h1>
@@ -11,15 +12,15 @@
            placeholder="Blacklist an URL to require exact match for its tab to be closed or reused."
            required
            style="width: 100%"
-           type="URL">
-    <button id="blacklist_button" disabled type="submit">Blacklist</button>
+           type="text">
+    <button id="blacklist_button" disabled type="button">Blacklist</button>
 </form>
 <h2>Multidomain</h2>
 <form id="multidomain_form">
     <textarea placeholder="Enter two or more URLs to treat as the same site.&#10;One URL per line.&#10;Then hit &quot;Apply&quot;."
               required
               rows="3" style="width: 100%"></textarea>
-    <button accesskey="a" disabled type="submit">Apply</button>
+    <button accesskey="a" disabled type="button">Apply</button>
 </form>
 <form id="patterns_form">
     <h1>Matching Patterns</h1>
@@ -29,7 +30,7 @@
     <button accesskey="r" id="restore" type="button">Load</button>
     <button accesskey="s" id="save" type="button">Save</button>
 </form>
-<script src="options.js"></script>
+<script src="options.js" type="module"></script>
 <h2>Technical information</h2>
 <p>
     Each line of configuration above is a regular expression. Tab is reused if a regular expression matches both target

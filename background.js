@@ -2,7 +2,7 @@
 
 import {RegexMatcher} from "./matcher.mjs";
 
-
+// noinspection JSUnresolvedVariable
 const tabs = browser.tabs;
 
 if (!tabs)
@@ -16,9 +16,6 @@ const backgroundPage = browser.runtime.getBackgroundPage();
 
 if (!backgroundPage)
     throw new Error("Background page is not found");
-
-const defaultPatterns = RegexMatcher.defaultPatterns();
-window.defaultPatterns = defaultPatterns;
 
 function debug() {
     console.debug.apply(console, arguments);
@@ -57,9 +54,11 @@ async function getMatcher() {
     const data = await sync.get("patterns");
     let patterns = data.patterns;
     if (!patterns) {
-        patterns = defaultPatterns;
+        patterns = RegexMatcher.defaultPatterns();
     }
-    patterns = RegexMatcher.сonvertLinesToRegExp(patterns);
+    patterns = RegexMatcher.convertLinesToRegExp(
+        patterns,
+        (line, error, pattern) => handleError('Error on line', line, pattern, error));
     return new RegexMatcher(patterns, debug);
 }
 

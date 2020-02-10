@@ -35,28 +35,39 @@ class RegexMatcher {
     }
 
     static defaultPatterns() {
+        RegexMatcher.convertLinesToRegExp(defaultConfiguration, (line, error, pattern) => {
+            throw new Error(`Pattern ${pattern} is invalid: ${error.message}`)
+        });
         return defaultConfiguration;
+    }
+
+    // Returns an error message if any
+    static validatePattern(line) {
+        let error = "";
+        RegexMatcher.convertLinesToRegExp([line], (lineNumber, e) => error = e.message);
+        return error;
     }
 
     static parsePatterns(regexPatternsAsText, handleErrors) {
         if (typeof regexPatternsAsText !== "string")
             throw new Error("Regex matcher only accepts a list of patterns separated by a newline symbol");
         let lines = regexPatternsAsText.split("\n");
-        return сonvertLinesToRegExp(lines, handleErrors);
+        return RegexMatcher.convertLinesToRegExp(lines, handleErrors);
     }
 
-    static сonvertLinesToRegExp(lines, handleErrors) {
+    static convertLinesToRegExp(lines, handleErrors) {
+        if (!handleErrors)
+            throw new Error("Error handler is missing");
         let result = [];
-        for (const i in lines) {
+        lines.forEach((line, i) =>  {
             try {
-                const line = lines[i];
                 if (!line)
-                    continue;
+                    return;
                 result.push(new RegExp(line));
             } catch (e) {
-                handleErrors(i, e);
+                handleErrors(i, e, line);
             }
-        }
+        });
         return result;
     }
 
