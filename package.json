@@ -12,7 +12,8 @@
   "webExt": {
     "ignoreFiles": [
       "package.json",
-      "package-lock.json"
+      "package-lock.json",
+      "test/"
     ],
     "run": {
       "browserConsole": false
