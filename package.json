@@ -13,7 +13,8 @@
     "ignoreFiles": [
       "package.json",
       "package-lock.json",
-      "test/"
+      "test/",
+      "README.md"
     ],
     "run": {
       "browserConsole": false
