@@ -18,7 +18,7 @@ if (!backgroundPage)
     throw new Error("Background page is not found");
 
 function debug() {
-    console.debug.apply(console, arguments);
+    //console.debug.apply(console, arguments);
 }
 
 function handleError() {

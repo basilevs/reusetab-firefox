@@ -8,7 +8,7 @@ if (!sync)
     throw new Error("Storage is not available");
 
 function debug(...args) {
-    console.debug(...args);
+    //console.debug(...args);
 }
 
 function functionEntry(functionName, ...args) {
