@@ -1,6 +1,6 @@
 "use strict";
 
-import {RegexMatcher} from "./matcher.mjs";
+import { RegexMatcher } from "./matcher.mjs";
 
 const storage = browser.storage;
 const sync = storage.sync;
@@ -74,6 +74,9 @@ function installValidator(input, validityConsumer, validate) {
         throw new Error("null button");
     if (!validate)
         throw new Error("null validate");
+    const form = input.closest("form");
+    if (!form)
+        throw new Error("Can't find form");
     function report(value, result) {
         debug("Validating ", value, ":", result);
         input.setCustomValidity(result);
@@ -91,16 +94,19 @@ function installValidator(input, validityConsumer, validate) {
             });
     }
     input.addEventListener("input", check);
+    form.addEventListener("reset", () => {
+      debug("Form reset");
+      input.setCustomValidity("");
+      validityConsumer(false);
+    });
 }
 
-function installAddingSubmitter(button, input, newPatternsProvider) {
+function installAddingSubmitter(button, newPatternsProvider) {
     const form = button.closest("form");
     if (!form)
         throw new Error("Can't find form");
 
     button.addEventListener("click", wrapErrors(async () => {
-        if (!input.validity.valid)
-            return;
         const patterns = await newPatternsProvider();
         await addPattern(patterns);
         form.reset();
@@ -121,11 +127,11 @@ function checkURL(string) {
     const blacklist_text = form.querySelector("input");
     const blacklist = form.querySelector("button");
     installValidator(blacklist_text,
-            isValid => blacklist.disabled = !isValid,
-            value => {
-        return checkURL(value);
-    });
-    installAddingSubmitter(blacklist, blacklist_text, async () => {
+        isValid => blacklist.disabled = !isValid,
+        value => {
+            return checkURL(value);
+        });
+    installAddingSubmitter(blacklist, async () => {
         let choice = blacklist_text.value;
         choice = choice.replace(/[.]/g, "\\.");
         return [choice + "(.*)"];
@@ -145,21 +151,21 @@ function checkURL(string) {
     }
     installValidator(multidomain_text,
         isValid => apply_multidomain.disabled = !isValid,
-            value => {
-        let array = value.split("\n");
-        array = uniq(array);
-        for (const url of array) {
-            const e = checkURL(url);
-            if (e) {
-                return e;
+        value => {
+            let array = value.split("\n");
+            array = uniq(array);
+            for (const url of array) {
+                const e = checkURL(url);
+                if (e) {
+                    return e;
+                }
             }
-        }
-        if (array.length < 2) {
-            return "Add another URL";
-        }
-        return "";
-    });
-    installAddingSubmitter(apply_multidomain,multidomain_text, async () => {
+            if (array.length < 2) {
+                return "Add another URL";
+            }
+            return "";
+        });
+    installAddingSubmitter(apply_multidomain, async () => {
         let choice = multidomain_text.value.split("\n");
         choice = uniq(choice);
         choice = choice.join("|");
@@ -192,7 +198,7 @@ function checkURL(string) {
     async function restore() {
         await setPatterns(await loadPatterns());
     }
-    installValidator(matchingPatternsText, () => {}, async value => {
+    installValidator(matchingPatternsText, () => { }, async value => {
         let result = [];
         RegexMatcher.parsePatterns(value, (lineNumber, error, pattern) => {
             result.push(`Line ${lineNumber}: ${pattern} : ${error.message}`);
