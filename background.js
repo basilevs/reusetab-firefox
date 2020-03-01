@@ -16,6 +16,11 @@ const backgroundPage = browser.runtime.getBackgroundPage();
 
 if (!backgroundPage)
     throw new Error("Background page is not found");
+    
+const onBeforeRequest = browser.webRequest.onBeforeRequest;
+
+if (!onBeforeRequest)
+    throw new Error("onBeforeRequest is not available");
 
 function debug() {
     //console.debug.apply(console, arguments);
@@ -31,6 +36,18 @@ function handleError() {
     }
     console.error.apply(console, message);
 }
+
+function wrapErrors(asyncFunction) {
+    function wrapper(...args) {
+        try {
+            return Promise.resolve(asyncFunction(...args)).catch(handleError);
+        } catch (e) {
+            handleError(e);
+        }
+    }
+    return wrapper;
+}
+
 
 function logFunction(name, ...args) {
     debug(name, ...args);
@@ -78,22 +95,18 @@ const watchedTabs = {};
 
 async function reopenIn(originTab, targetTab) {
     logFunction("reopenIn", originTab, targetTab);
-    try {
-        await tabs.remove(originTab.id);
-    } catch (e) {
-        handleError("Failed to remove a tab: ", e);
-        return;
-    }
+    await tabs.remove(originTab.id);
+    await navigate(targetTab, originTab.url, originTab.active);
+}
+
+async function navigate(targetTab, url, activate) {
+    logFunction("navigate", targetTab, url, activate);
     const updateRequest = {
-        active: originTab.active
+        active: activate
     };
-    if (targetTab.url !== originTab.url)
-        updateRequest.url = originTab.url;
-    try {
-        await tabs.update(targetTab.id, updateRequest);
-    } catch (e) {
-        handleError("Failed to perform navigation", e);
-    }
+    if (targetTab.url !== url)
+        updateRequest.url = url;
+    await tabs.update(targetTab.id, updateRequest);
 }
 
 async function findDuplicate(tab) {
@@ -143,7 +156,7 @@ tabs.onCreated.addListener(tab => {
     setTimeout(() => delete watchedTabs[tabId], 10000);
 });
 
-tabs.onUpdated.addListener((tabId, change, tab) => {
+tabs.onUpdated.addListener(wrapErrors(async (tabId, change, tab) => {
     if (!change.url)
         return;
     const watched = watchedTabs[tabId];
@@ -152,12 +165,40 @@ tabs.onUpdated.addListener((tabId, change, tab) => {
         return;
     }
     logFunction("onUpdated", tabId, change, tab);
-    tryReuseTab(tab)
-        .then((wasReused) => {
-            if (wasReused) delete watchedTabs[tabId];
-        })
-        .catch(e => handleError(e))
-});
+    const wasReused = await tryReuseTab(tab);
+    if (wasReused) delete watchedTabs[tabId];
+}));
+
+onBeforeRequest.addListener(wrapErrors(async requestDetails => {
+    const tabId = requestDetails.tabId;
+    if (tabId == -1) {
+        return;
+    }
+    const sourceTab = await tabs.get(tabId);
+    if (!sourceTab)
+        throw new Error(`Invalid tabId: ${tabId}`);
+    logFunction("onBeforeRequest", requestDetails, sourceTab);
+    const targetState = {
+        id: sourceTab.id,
+        openerTabId: sourceTab.openerTabId,
+        url: requestDetails.url,
+        pinned: sourceTab.pinned,
+        active: sourceTab.active,
+        hidden: sourceTab.hidden
+    };
+    const duplicate = await findDuplicate(targetState);
+    if (duplicate) {
+        if (watchedTabs[tabId]) {
+            await tabs.remove(tabId);
+        }
+        await navigate(duplicate, requestDetails.url, sourceTab.active);
+        debug(`Cancelling in-tab navigation to ${requestDetails.url}`);
+        return {
+            redirectUrl:"javascript:"
+        };
+    }
+    return {};
+}), {urls: ["<all_urls>"], types: ["main_frame"]}, ["blocking"]);
 
 getMatcher().catch(handleError);
 

@@ -5,7 +5,10 @@
   "name": "Reuse Tab",
   "permissions": [
     "tabs",
-    "storage"
+    "storage",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
   ],
   "incognito": "not_allowed",
   "background": {
@@ -14,7 +17,7 @@
   "options_ui": {
     "page": "options.html"
   },
-  "version": "0.12",
+  "version": "1.0",
   "author": "Vasili Gulevich",
   "icons": {
     "48": "icon.png"
