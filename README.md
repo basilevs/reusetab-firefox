@@ -11,7 +11,7 @@ When a new tab is opened for a URL that matches a pinned tab, the new tab is clo
 - Configurable URL matching patterns (regular expressions)
 - Blacklist support to exclude specific URLs
 - Multi-domain grouping to treat related sites as one
-- Settings are stored in `browser.storage.sync`, so they can be synced across devices when [Firefox Sync](https://support.mozilla.org/en-US/kb/how-do-i-set-sync-my-computer) is enabled
+- [Firefox Sync](https://support.mozilla.org/en-US/kb/how-do-i-set-sync-my-computer) compatible
 
 ## Configuration
 
